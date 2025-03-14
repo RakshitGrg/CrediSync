@@ -1,0 +1,124 @@
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const db = require("../config/db");
+
+const router = express.Router();
+
+// User Signup
+router.post("/user/signup", async (req, res) => {
+    const { full_name, email, phone, password } = req.body;
+
+    if (!full_name || !email || !phone || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const sql = "INSERT INTO users (full_name, email, phone, password_hash) VALUES (?, ?, ?, ?)";
+    db.query(sql, [full_name, email, phone, hashedPassword], (err) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage });
+        res.status(201).json({ message: "User registered successfully!" });
+    });
+});
+
+// User Login
+router.post("/user/login", (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const sql = "SELECT * FROM users WHERE email = ?";
+    db.query(sql, [email], async (err, result) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage });
+
+        if (result.length === 0) return res.status(401).json({ message: "Invalid credentials" });
+
+        const user = result[0];
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+
+        const token = jwt.sign({ user_id: user.user_id, role: "user" }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        res.json({ message: "Login successful", token });
+    });
+});
+// Company Signup
+router.post("/company/signup", async (req, res) => {
+    const { company_name, email, phone, password, registration_no, business_address } = req.body;
+
+    if (!company_name || !email || !phone || !password || !registration_no || !business_address) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const sql = "INSERT INTO companies (company_name, email, phone, password_hash, registration_no, business_address) VALUES (?, ?, ?, ?, ?, ?)";
+    db.query(sql, [company_name, email, phone, hashedPassword, registration_no, business_address], (err) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage });
+        res.status(201).json({ message: "Company registered successfully!" });
+    });
+});
+// Company Login
+router.post("/company/login", (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const sql = "SELECT * FROM companies WHERE email = ?";
+    db.query(sql, [email], async (err, result) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage });
+
+        if (result.length === 0) return res.status(401).json({ message: "Invalid credentials" });
+
+        const company = result[0];
+        const isMatch = await bcrypt.compare(password, company.password_hash);
+        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+
+        const token = jwt.sign({ company_id: company.company_id, role: "company" }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        res.json({ message: "Login successful", token });
+    });
+});
+// Admin Signup
+router.post("/admin/signup", async (req, res) => {
+    const { full_name, email, phone, password } = req.body;
+
+    if (!full_name || !email || !phone || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const sql = "INSERT INTO admins (full_name, email, phone, password_hash) VALUES (?, ?, ?, ?)";
+    db.query(sql, [full_name, email, phone, hashedPassword], (err) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage });
+        res.status(201).json({ message: "Admin registered successfully!" });
+    });
+});
+
+module.exports = router;
+// Admin Login
+router.post("/admin/login", (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const sql = "SELECT * FROM admins WHERE email = ?";
+    db.query(sql, [email], async (err, result) => {
+        if (err) return res.status(500).json({ message: err.sqlMessage });
+
+        if (result.length === 0) return res.status(401).json({ message: "Invalid credentials" });
+
+        const admin = result[0];
+        const isMatch = await bcrypt.compare(password, admin.password_hash);
+        if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+
+        const token = jwt.sign({ admin_id: admin.admin_id, role: "admin" }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        res.json({ message: "Login successful", token });
+    });
+});
