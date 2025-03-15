@@ -27,6 +27,7 @@ const UserLoginForm = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.token); // Save token to localStorage
+        localStorage.setItem("email", formData.email);
         navigate("/user/dashboard");
       } else {
         const data = await response.json();

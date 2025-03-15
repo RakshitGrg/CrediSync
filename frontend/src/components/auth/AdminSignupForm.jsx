@@ -32,6 +32,7 @@ const AdminSignupForm = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.token); // Save token to localStorage
+        localStorage.setItem("email", formData.email);
         navigate("/admin/dashboard");
       } else {
         const data = await response.json();

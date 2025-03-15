@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.post("/user/signup", async (req, res) => {
     const { fullName, email, phone, password } = req.body; // Use frontend variable names
-
+    
     if (!fullName || !email || !phone || !password) {
         return res.status(400).json({ message: "All fields are required" });
     }

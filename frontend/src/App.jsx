@@ -5,6 +5,8 @@ import CompanySignupForm from "./components/auth/CompanySignupForm";
 import CompanyLoginForm from "./components/auth/CompanyLoginForm";
 import AdminSignupForm from "./components/auth/AdminSignupForm";
 import AdminLoginForm from "./components/auth/AdminLoginForm";
+import Navbar from "./components/Navbar";
+import Verification from "./components/Verification";
 import { useState } from "react";
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
     <Router>
       <Routes>
         {/* User Routes */}
+        <Route path="/user/dashboard" element={<Navbar />} />
+        <Route path="/user/messages" element={<Verification />} />
         <Route path="/user/signup" element={<UserSignupForm />} />
         <Route path="/user/login" element={<UserLoginForm />} />
 
@@ -25,6 +29,8 @@ function App() {
         {/* Admin Routes */}
         <Route path="/admin/signup" element={<AdminSignupForm />} />
         <Route path="/admin/login" element={<AdminLoginForm />} />
+
+       
 
         {/* Default Route */}
         <Route

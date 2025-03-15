@@ -34,6 +34,7 @@ const CompanySignupForm = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("token", data.token); // Save token to localStorage
+        localStorage.setItem("email", formData.email);
         navigate("/company/dashboard");
       } else {
         const data = await response.json();
