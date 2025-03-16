@@ -19,7 +19,7 @@ const createTables = () => {
       email VARCHAR(255) NOT NULL UNIQUE,
       phone VARCHAR(15) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
-      verification_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+      verification_status ENUM('none', 'pending', 'approved', 'rejected') DEFAULT 'none',
       verified_by INT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (verified_by) REFERENCES admins(admin_id) ON DELETE SET NULL
@@ -46,7 +46,7 @@ const createTables = () => {
       password_hash VARCHAR(255) NOT NULL,
       registration_no VARCHAR(255) NOT NULL UNIQUE,
       business_address TEXT NOT NULL,
-      verification_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+      verification_status ENUM('none', 'pending', 'approved', 'rejected') DEFAULT 'none',
       verified_by INT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (verified_by) REFERENCES admins(admin_id) ON DELETE SET NULL
@@ -153,7 +153,6 @@ app.post(
     try {
       // Retrieve the email and Aadhar number from the request body
       const { email, aadhar } = req.body;
-      //console.log(email);
       if (!email || !aadhar) {
         return res
           .status(400)
@@ -200,17 +199,33 @@ app.post(
                 .json({ message: "Failed to insert document details." });
             }
 
-            // Send success response
-            let responseMessage = "Files uploaded and data saved successfully.";
+            // Update the verification_status to 'pending' in the users table
+            const updateVerificationStatusQuery = `
+              UPDATE users
+              SET verification_status = 'pending'
+              WHERE user_id = ?
+            `;
 
-            if (addressProofUrl) {
-              responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
-            }
-            if (bankStatementUrl) {
-              responseMessage += ` Bank Statement uploaded: ${bankStatementUrl}.`;
-            }
+            db.query(updateVerificationStatusQuery, [userId], (err, result) => {
+              if (err) {
+                console.error("Error updating verification status:", err);
+                return res
+                  .status(500)
+                  .json({ message: "Failed to update verification status." });
+              }
 
-            res.json({ message: responseMessage });
+              // Send success response
+              let responseMessage = "Files uploaded and data saved successfully. Verification status set to 'pending'.";
+
+              if (addressProofUrl) {
+                responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
+              }
+              if (bankStatementUrl) {
+                responseMessage += ` Bank Statement uploaded: ${bankStatementUrl}.`;
+              }
+
+              res.json({ message: responseMessage });
+            });
           }
         );
       });
