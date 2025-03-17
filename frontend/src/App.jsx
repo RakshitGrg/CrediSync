@@ -6,13 +6,15 @@ import CompanyLoginForm from "./components/auth/CompanyLoginForm";
 import AdminSignupForm from "./components/auth/AdminSignupForm";
 import AdminLoginForm from "./components/auth/AdminLoginForm";
 import Navbar from "./components/Navbar";
+import NavbarAdmin from "./components/NavbarAdmin";
 import Verification from "./components/Verification";
-import { useState } from "react";
+import { use, useState } from "react";
 import AuthNavbar from "./components/AuthNavbar";
 
 function App() {
   const [isLogin, setIsLogin] = useState(false);
   const [userType, setUserType] = useState("user");
+  const [expanded, setExpanded] = useState(true);
 
   return (
     <Router>
@@ -30,6 +32,7 @@ function App() {
         {/* Admin Routes */}
         <Route path="/admin/signup" element={<AdminSignupForm />} />
         <Route path="/admin/login" element={<AdminLoginForm />} />
+        <Route path="/admin/dashboard" element={<NavbarAdmin setExpanded={setExpanded} expanded={expanded}/>}/>
 
         {/* Default Route */}
         <Route
