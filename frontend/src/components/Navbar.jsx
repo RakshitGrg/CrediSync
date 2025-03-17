@@ -84,8 +84,7 @@ const UserProfileNavbar = ({ setExpanded }) => {
         {/* Navbar Title with Icon */}
         <a id="nav-title" target="_blank" rel="noopener noreferrer">
           <div className="flex flex-row ml-3">
-            <Sprout className="h-5 w-5 mt-2.5" />
-            User Profile
+            CrediSync
           </div>
         </a>
 
