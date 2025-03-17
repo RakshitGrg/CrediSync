@@ -8,7 +8,7 @@ import AdminLoginForm from "./components/auth/AdminLoginForm";
 import Navbar from "./components/Navbar";
 import NavbarAdmin from "./components/NavbarAdmin";
 import Verification from "./components/Verification";
-import { use, useState } from "react";
+import { useState } from "react";
 import AuthNavbar from "./components/AuthNavbar";
 
 function App() {

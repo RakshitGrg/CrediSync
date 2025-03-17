@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { Upload, X, FileText, CreditCard, CheckCircle } from "lucide-react";
 
 const DocumentUploadPopup = ({ isOpen, onClose }) => {
-  if (!isOpen) return null; // Hide component when not open
+  if (!isOpen) return null;
 
   const [aadharNumber, setAadharNumber] = useState("");
   const [addressProof, setAddressProof] = useState(null);
@@ -37,7 +38,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
 
     const formData = new FormData();
     formData.append("email", userEmail);
-    formData.append("aadhar", aadharNumber); // Aadhar is a text field, not a file
+    formData.append("aadhar", aadharNumber);
     formData.append("addressProof", addressProof);
     formData.append("bankStatement", bankStatement);
 
@@ -59,74 +60,127 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
+      <style jsx>{`
+        input::placeholder {
+          color: #9ca3af; /* Custom placeholder color */
+        }
+      `}</style>
+
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
       {/* Popup Box */}
-      <div className="bg-white p-8 rounded-lg shadow-lg w-[48rem] h-[32rem] text-gray-900">
-        <h2 className="text-2xl font-semibold mb-5 text-gray-800">
-          Upload Verification Document
-        </h2>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-[48rem] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
+        <div className="absolute right-4 top-4">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
 
-        {/* Aadhar Number */}
-        <label
-          htmlFor="aadhar-number"
-          className="text-sm font-medium text-gray-700 mb-2 block"
-        >
-          Aadhar Number
-        </label>
-        <input
-          id="aadhar-number"
-          type="text"
-          value={aadharNumber}
-          onChange={handleAadharChange}
-          className="mb-3 w-full border border-gray-300 p-3 rounded-lg"
-        />
+        <div className="p-8">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="bg-emerald-100 p-3 rounded-full">
+              <Upload className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              Document Verification
+            </h2>
+          </div>
 
-        {/* Address Proof */}
-        <label
-          htmlFor="address-proof"
-          className="text-sm font-medium text-gray-700 mb-2 block"
-        >
-          Address Proof
-        </label>
-        <input
-          id="address-proof"
-          type="file"
-          onChange={(e) => handleFileChange(e, "addressProof")}
-          className="mb-3 w-full border border-gray-300 p-3 rounded-lg"
-        />
+          <div className="space-y-6">
+            {/* Aadhar Number */}
+            <div>
+              <label
+                htmlFor="aadhar-number"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                Aadhar Number
+              </label>
+              <input
+                id="aadhar-number"
+                type="text"
+                value={aadharNumber}
+                onChange={handleAadharChange}
+                className="text-black w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                placeholder="Enter your 12-digit Aadhar number"
+              />
+            </div>
 
-        {/* Bank Statement */}
-        <label
-          htmlFor="bank-statement"
-          className="text-sm font-medium text-gray-700 mb-2 block"
-        >
-          Bank Statement
-        </label>
-        <input
-          id="bank-statement"
-          type="file"
-          onChange={(e) => handleFileChange(e, "bankStatement")}
-          className="mb-3 w-full border border-gray-300 p-3 rounded-lg"
-        />
+            {/* Address Proof */}
+            <div>
+              <label
+                htmlFor="address-proof"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+              >
+                <FileText className="w-4 h-4" />
+                Address Proof
+              </label>
+              <div className="relative">
+                <input
+                  id="address-proof"
+                  type="file"
+                  onChange={(e) => handleFileChange(e, "addressProof")}
+                  className="text-black w-full border border-gray-200 p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                />
+                {addressProof && (
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                )}
+              </div>
+            </div>
 
-        {/* Upload Button */}
-        <button
-          onClick={handleUpload}
-          className="bg-green-700 hover:bg-green-800 text-white px-5 py-3 rounded-lg w-full font-medium"
-          disabled={uploading}
-        >
-          {uploading ? "Uploading..." : "Upload"}
-        </button>
+            {/* Bank Statement */}
+            <div>
+              <label
+                htmlFor="bank-statement"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+              >
+                <FileText className="w-4 h-4" />
+                Bank Statement
+              </label>
+              <div className="relative">
+                <input
+                  id="bank-statement"
+                  type="file"
+                  onChange={(e) => handleFileChange(e, "bankStatement")}
+                  className="text-black w-full border border-gray-200 p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                />
+                {bankStatement && (
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                )}
+              </div>
+            </div>
 
-        {/* Message */}
-        {message && <p className="mt-3 text-base text-gray-700">{message}</p>}
+            {/* Message */}
+            {message && (
+              <div
+                className={`p-4 rounded-lg ${
+                  message.includes("failed")
+                    ? "bg-red-50 text-red-700"
+                    : "bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {message}
+              </div>
+            )}
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="mt-5 text-red-600 hover:text-red-700 w-full font-medium text-lg"
-        >
-          Close
-        </button>
+            {/* Upload Button */}
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="w-full bg-[#3c8243] hover:bg-[#3c6f42] disabled:bg-emerald-300 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:shadow-none"
+            >
+              <Upload className="w-5 h-5" />
+              {uploading ? "Uploading..." : "Upload Documents"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
