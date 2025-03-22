@@ -141,7 +141,48 @@ const storage = multer.diskStorage({
   },
 });
 
+const getAdmins = async () => {
+  return new Promise((resolve, reject) => {
+    const query = "SELECT admin_id FROM admins";
+    db.query(query, (err, results) => {
+      if (err) return reject(err);
+      resolve(results.map((row) => row.admin_id));
+    });
+  });
+};
+
+const updateAdminPendingUsers = async (adminId, userId, action = "add") => {
+  return new Promise((resolve, reject) => {
+    // Fetch the current pending_users for the admin
+    const query = "SELECT pending_users FROM admins WHERE admin_id = ?";
+    db.query(query, [adminId], (err, results) => {
+      if (err) return reject(err);
+
+      let pendingUsers = results[0].pending_users || []; // Default to an empty array if null
+
+      if (action === "add") {
+        // Add the user ID to the pending_users array
+        if (!pendingUsers.includes(userId)) {
+          pendingUsers.push(userId);
+        }
+      } else if (action === "remove") {
+        // Remove the user ID from the pending_users array
+        pendingUsers = pendingUsers.filter((id) => id !== userId);
+      }
+
+      // Update the pending_users field in the database
+      const updateQuery = "UPDATE admins SET pending_users = ? WHERE admin_id = ?";
+      db.query(updateQuery, [JSON.stringify(pendingUsers), adminId], (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+};
+
 const upload = multer({ storage });
+
+let lastAssignedAdminIndex = -1; // Track the last assigned admin
 
 app.post(
   "/upload",
@@ -149,9 +190,8 @@ app.post(
     { name: "addressProof", maxCount: 1 },
     { name: "bankStatement", maxCount: 1 },
   ]),
-  (req, res) => {
+  async (req, res) => {
     try {
-      // Retrieve the email and Aadhar number from the request body
       const { email, aadhar } = req.body;
       if (!email || !aadhar) {
         return res
@@ -159,9 +199,9 @@ app.post(
           .json({ message: "Email and Aadhar number are required." });
       }
 
-      // Query the user ID based on the email
+      // Fetch the user ID
       const queryUserId = "SELECT user_id FROM users WHERE email = ?";
-      db.query(queryUserId, [email], (err, result) => {
+      db.query(queryUserId, [email], async (err, result) => {
         if (err) {
           console.error("Error fetching user ID:", err);
           return res.status(500).json({ message: "Database query failed." });
@@ -171,8 +211,20 @@ app.post(
           return res.status(404).json({ message: "User not found." });
         }
 
-        // Get the user_id from the query result
         const userId = result[0].user_id;
+
+        // Fetch all admins
+        const admins = await getAdmins();
+        if (admins.length === 0) {
+          return res.status(500).json({ message: "No admins available." });
+        }
+
+        // Assign the request to the next admin in round-robin fashion
+        lastAssignedAdminIndex = (lastAssignedAdminIndex + 1) % admins.length;
+        const assignedAdminId = admins[lastAssignedAdminIndex];
+
+        // Add the user ID to the assigned admin's pending_users
+        await updateAdminPendingUsers(assignedAdminId, userId, "add");
 
         // Store the uploaded document details
         const addressProofUrl = req.files.addressProof
@@ -199,33 +251,37 @@ app.post(
                 .json({ message: "Failed to insert document details." });
             }
 
-            // Update the verification_status to 'pending' in the users table
+            // Update the verification_status and assign the admin
             const updateVerificationStatusQuery = `
               UPDATE users
-              SET verification_status = 'pending'
+              SET verification_status = 'pending', verified_by = ?
               WHERE user_id = ?
             `;
 
-            db.query(updateVerificationStatusQuery, [userId], (err, result) => {
-              if (err) {
-                console.error("Error updating verification status:", err);
-                return res
-                  .status(500)
-                  .json({ message: "Failed to update verification status." });
-              }
+            db.query(
+              updateVerificationStatusQuery,
+              [assignedAdminId, userId],
+              (err, result) => {
+                if (err) {
+                  console.error("Error updating verification status:", err);
+                  return res
+                    .status(500)
+                    .json({ message: "Failed to update verification status." });
+                }
 
-              // Send success response
-              let responseMessage = "Files uploaded and data saved successfully. Verification status set to 'pending'.";
+                // Send success response
+                let responseMessage = "Files uploaded and data saved successfully. Verification status set to 'pending'.";
 
-              if (addressProofUrl) {
-                responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
-              }
-              if (bankStatementUrl) {
-                responseMessage += ` Bank Statement uploaded: ${bankStatementUrl}.`;
-              }
+                if (addressProofUrl) {
+                  responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
+                }
+                if (bankStatementUrl) {
+                  responseMessage += ` Bank Statement uploaded: ${bankStatementUrl}.`;
+                }
 
-              res.json({ message: responseMessage });
-            });
+                res.json({ message: responseMessage, assignedAdminId });
+              }
+            );
           }
         );
       });
@@ -243,6 +299,9 @@ app.get("/", (req, res) => {
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
+
+const adminRoutes = require("./routes/adminRoutes");
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
