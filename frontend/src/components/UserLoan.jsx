@@ -136,8 +136,18 @@ const LoanCreation = () => {
     amount: "",
     interestRate: "",
     term: "",
-    borrower: "",
   });
+
+ // const [userEmail, setUserEmail] = useState("");
+
+  
+  // Extract user email from localStorage when the component mounts
+  // useEffect(() => {
+  //   const email = localStorage.getItem("email");
+  //   if (email) {
+  //     setUserEmail(email);
+  //   }
+  // }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -147,11 +157,43 @@ const LoanCreation = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   console.log("Loan Created:", loanData);
+  //   alert("Loan Created Successfully!");
+  // };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Loan Created:", loanData);
-    alert("Loan Created Successfully!");
+    const userEmail = localStorage.getItem("email");
+    const loanDetails = {
+      ...loanData,
+      email: userEmail, // Include user email in the request payload
+    };
+    console.log(loanDetails);
+
+    try {
+      const response = await fetch("http://localhost:5001/createLoan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(loanDetails),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert("Loan Created Successfully!");
+      } else {
+        alert("Failed to create loan. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating loan:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
@@ -210,7 +252,7 @@ const LoanCreation = () => {
             />
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label className="flex items-center text-sm font-medium text-gray-700">
               <User className="w-4 h-4 mr-2 text-green-600" />
               Borrower Name
@@ -224,7 +266,7 @@ const LoanCreation = () => {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               placeholder="Enter borrower name"
             />
-          </div>
+          </div> */}
 
           <button
             type="submit"

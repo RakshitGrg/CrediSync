@@ -141,7 +141,7 @@ const UserProfileNavbar = ({ setExpanded }) => {
           icon="fa-solid fa-envelope"
           text="Borrowers"
           onClick={() => {
-            navigate("/user/messages");
+            navigate("/user/borrower");
           }}
         />
         <NavButton

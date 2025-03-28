@@ -12,6 +12,7 @@ import Verification from "./components/Verification";
 import { useState } from "react";
 import AuthNavbar from "./components/AuthNavbar";
 import UserLoan from "./components/UserLoan";
+import UserLoanBorrower from "./components/UserLoanBorrower";
 
 function App() {
   const [isLogin, setIsLogin] = useState(false);
@@ -46,6 +47,23 @@ function App() {
   }
 />
 
+
+<Route
+  path="/user/borrower"
+  element={
+    <div className="flex flex-row min-h-screen">
+      {/* Sidebar Navbar */}
+      <div className="w-[250px] min-w-[250px] bg-white shadow-md">
+        <Navbar />
+      </div>
+
+      {/* Main Content Area for Loan Creation */}
+      <div className="flex-1 p-6 bg-gray-100">
+        <UserLoanBorrower />
+      </div>
+    </div>
+  }
+/>
 
         {/* Company Routes */}
         <Route path="/company/signup" element={<CompanySignupForm />} />

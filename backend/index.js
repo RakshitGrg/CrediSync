@@ -78,6 +78,19 @@ const createTables = () => {
     );
   `;
 
+  const createUserLoanTable = `CREATE TABLE IF NOT EXISTS UserLoan (
+    loanId INT AUTO_INCREMENT PRIMARY KEY,
+    lenderId INT NOT NULL,
+    borrowerId INT DEFAULT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    interestRate DECIMAL(5,2) NOT NULL,
+    startDate DATE NOT NULL,
+    duration INT NOT NULL,
+    FOREIGN KEY (lenderId) REFERENCES users(user_id),
+    FOREIGN KEY (borrowerId) REFERENCES users(user_id)
+);
+`;
+
   // Execute the queries
   db.query(createAdminsTable, (err) => {
     if (err) throw err;
@@ -101,6 +114,11 @@ const createTables = () => {
     if (err) throw err;
     console.log("Company Documents table created or already exists");
   });
+  db.query(createUserLoanTable, (err) => {
+    if (err) throw err;
+    console.log("Users table created or already exists");
+  });
+
 };
 
 // Call the function to create tables when the server starts
@@ -291,6 +309,79 @@ app.post(
     }
   }
 );
+
+
+// app.post("/create-loan", (req, res) => {
+//   const { email, amount, interestRate, term } = req.body; // Match frontend fields
+//   const startDate = new Date().toISOString().split("T")[0];
+
+//   // Get lenderId from the user table using email
+//   db.query(
+//     "SELECT user_id FROM user WHERE email = ?",
+//     [email], // Match frontend key
+//     (err, results) => {
+//       if (err) {
+//         console.error("Database error:", err);
+//         return res.status(500).json({ error: "Database error", details: err });
+//       }
+//       if (results.length === 0) {
+//         return res.status(404).json({ error: "Lender not found" });
+//       }
+      
+//       const lenderId = results[0].user_id;
+
+//       // Insert loan details into UserLoan table
+//       db.query(
+//         "INSERT INTO UserLoan (lenderId, borrowerId, amount, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?)",
+//         [lenderId, amount, interestRate, startDate, term], // Match frontend key
+//         (err, result) => {
+//           if (err) {
+//             console.error("Database error:", err);
+//             return res.status(500).json({ error: "Database error", details: err });
+//           }
+//           res.status(201).json({ message: "Loan created successfully", loanId: result.insertId });
+//         }
+//       );
+//     }
+//   );
+// });
+
+app.post("/createLoan", (req, res) => {
+  console.log("received data from frontend");
+  const { amount, interestRate, term, email } = req.body; 
+  const startDate = new Date().toISOString().split("T")[0];
+
+  db.query(
+    "SELECT user_id FROM users WHERE email = ?",
+    [email], 
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error", details: err });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      
+      const lenderId = results[0].user_id;
+
+      db.query(
+        "INSERT INTO UserLoan (lenderId, borrowerId, amount, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?)",
+        [lenderId, amount, interestRate, startDate, term], 
+        (err, result) => {
+          if (err) {
+            console.error("Database error:", err);
+            console.log(err);
+            return res.status(500).json({ error: "Database error", details: err });
+          }
+          res.status(201).json({ message: "Loan created successfully", loanId: result.insertId });
+        }
+      );
+    }
+  );
+});
+
+
 
 app.get("/", (req, res) => {
   res.send("CREDISYNC Backend Running!");
