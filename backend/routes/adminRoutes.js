@@ -1,10 +1,43 @@
 const express = require("express");
 const db = require("../config/db");
 const router = express.Router();
+const authenticateJWT = require("../middlewares/authMiddleware");
 
+
+const updateAdminPendingUsers = async (adminId, userId, action = "add") => {
+    return new Promise((resolve, reject) => {
+      // Fetch the current pending_users for the admin
+      const query = "SELECT pending_users FROM admins WHERE admin_id = ?";
+      db.query(query, [adminId], (err, results) => {
+        if (err) return reject(err);
+  
+        let pendingUsers = results[0].pending_users || []; // Default to an empty array if null
+  
+        if (action === "add") {
+          // Add the user ID to the pending_users array
+          if (!pendingUsers.includes(userId)) {
+            pendingUsers.push(userId);
+          }
+        } else if (action === "remove") {
+          // Remove the user ID from the pending_users array
+          pendingUsers = pendingUsers.filter((id) => id !== userId);
+        }
+  
+        // Update the pending_users field in the database
+        const updateQuery = "UPDATE admins SET pending_users = ? WHERE admin_id = ?";
+        db.query(updateQuery, [JSON.stringify(pendingUsers), adminId], (err) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+    });
+  };
+  
 // Fetch pending users
-router.get("/admin/pending-users", (req, res) => {
+router.get("/admin/pending-users", authenticateJWT, (req, res) => {
     const adminId = req.user.adminId; // Assuming admin ID is available in the request
+
+    console.log(adminId)
   
     // Fetch the admin's pending_users
     const query = "SELECT pending_users FROM admins WHERE admin_id = ?";
@@ -15,6 +48,8 @@ router.get("/admin/pending-users", (req, res) => {
       }
   
       const pendingUsers = results[0].pending_users || [];
+
+      console.log(pendingUsers)
   
       // Fetch details of pending users
       if (pendingUsers.length === 0) {
@@ -42,7 +77,7 @@ router.get("/admin/pending-users", (req, res) => {
     });
   });
 // Fetch pending companies
-router.get("/admin/pending-companies", (req, res) => {
+router.get("/admin/pending-companies", authenticateJWT, (req, res) => {
   const query = `
     SELECT 
       company_id AS id, 
@@ -63,10 +98,19 @@ router.get("/admin/pending-companies", (req, res) => {
   });
 });
 
+
+router.get("/admin/test", authenticateJWT, (req, res) => {
+    const adminId = req.user.adminId;
+    console.log(adminId)
+    })
 // Approve or reject a user
-router.post("/admin/approve-reject-user", async (req, res) => {
+router.post("/admin/approve-reject-user", authenticateJWT, async (req, res) => {
     const { userId, status } = req.body;
     const adminId = req.user.adminId; // Assuming admin ID is available in the request
+
+    console.log("hello : ", userId, status, adminId)
+
+    // res.json({ message: "testing the endpoint" })
   
     if (!userId || !status) {
       return res.status(400).json({ message: "User ID and status are required" });
@@ -90,7 +134,7 @@ router.post("/admin/approve-reject-user", async (req, res) => {
     });
   });
 // Approve or reject a company
-router.post("/admin/approve-reject-company", (req, res) => {
+router.post("/admin/approve-reject-company", authenticateJWT, (req, res) => {
     const { companyId, status } = req.body;
     const adminId = req.user.adminId; // Assuming admin ID is available in the request
   

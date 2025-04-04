@@ -1,16 +1,15 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import UserSignupForm from "./components/auth/UserSignupForm";
 import UserLoginForm from "./components/auth/UserLoginForm";
 import CompanySignupForm from "./components/auth/CompanySignupForm";
 import CompanyLoginForm from "./components/auth/CompanyLoginForm";
 import AdminSignupForm from "./components/auth/AdminSignupForm";
 import AdminLoginForm from "./components/auth/AdminLoginForm";
-import Navbar from "./components/Navbar";
-import HomePage from "./components/HomePage";
-import NavbarAdmin from "./components/NavbarAdmin";
 import Verification from "./components/Verification";
 import { useState } from "react";
 import AuthNavbar from "./components/AuthNavbar";
+import CommonNavbar from "./components/CommonNavbar";
+import AdminNotifications from "./components/AdminNotifications";
 import UserLoan from "./components/UserLoan";
 import UserLoanBorrower from "./components/UserLoanBorrower";
 
@@ -21,49 +20,29 @@ function App() {
 
   return (
     <Router>
-   
+      <InnerApp 
+        isLogin={isLogin} setIsLogin={setIsLogin}
+        userType={userType} setUserType={setUserType}
+        expanded={expanded} setExpanded={setExpanded}
+      />
+    </Router>
+  );
+}
+
+function InnerApp({ isLogin, setIsLogin, userType, setUserType, expanded, setExpanded }) {
+  const location = useLocation(); // Now it's inside Router!
+
+  return (
+    <>
+      {isLogin && location.pathname !== "/" && (
+        <CommonNavbar role={userType} setExpanded={setExpanded} expanded={expanded} />
+      )}
+
       <Routes>
         {/* User Routes */}
-        <Route path="/user/dashboard" element={<HomePage />} />
-
         <Route path="/user/messages" element={<Verification />} />
         <Route path="/user/signup" element={<UserSignupForm />} />
         <Route path="/user/login" element={<UserLoginForm />} />
-        {/* <Route path="/user/lender" element={<div className="flex flex-row gap-5"> <Navbar /> <UserLoan /> </div>} /> */}
-        <Route
-  path="/user/lender"
-  element={
-    <div className="flex flex-row min-h-screen">
-      {/* Sidebar Navbar */}
-      <div className="w-[250px] min-w-[250px] bg-white shadow-md">
-        <Navbar />
-      </div>
-
-      {/* Main Content Area for Loan Creation */}
-      <div className="flex-1 p-6 bg-gray-100">
-        <UserLoan />
-      </div>
-    </div>
-  }
-/>
-
-
-<Route
-  path="/user/borrower"
-  element={
-    <div className="flex flex-row min-h-screen">
-      {/* Sidebar Navbar */}
-      <div className="w-[250px] min-w-[250px] bg-white shadow-md">
-        <Navbar />
-      </div>
-
-      {/* Main Content Area for Loan Creation */}
-      <div className="flex-1 p-6 bg-gray-100">
-        <UserLoanBorrower />
-      </div>
-    </div>
-  }
-/>
 
         {/* Company Routes */}
         <Route path="/company/signup" element={<CompanySignupForm />} />
@@ -72,7 +51,11 @@ function App() {
         {/* Admin Routes */}
         <Route path="/admin/signup" element={<AdminSignupForm />} />
         <Route path="/admin/login" element={<AdminLoginForm />} />
-        <Route path="/admin/dashboard" element={<NavbarAdmin setExpanded={setExpanded} expanded={expanded}/>}/>
+        <Route path="/admin/notification" element={<AdminNotifications expanded={expanded} />} />
+
+        {/* User Loan Routes */}
+        <Route path="/user/borrower" element={<UserLoanBorrower />} />
+        <Route path="/user/lender" element={<UserLoan />} />
 
         {/* Default Route */}
         <Route
@@ -87,7 +70,7 @@ function App() {
           }
         />
       </Routes>
-    </Router>
+    </>
   );
 }
 

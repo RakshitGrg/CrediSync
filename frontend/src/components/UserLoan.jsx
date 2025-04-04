@@ -254,9 +254,9 @@ const LoanCreation = () => {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             >
               <option value="">Select employment status</option>
-              <option value="full-time">Full-Time Employed</option>
-              <option value="part-time">Part-Time Employed</option>
-              <option value="self-employed">Self-Employed</option>
+              <option value="full_time">Full-Time Employed</option>
+              <option value="part_time">Part-Time Employed</option>
+              <option value="self_employed">Self-Employed</option>
               <option value="unemployed">Unemployed</option>
               <option value="retired">Retired</option>
             </select>

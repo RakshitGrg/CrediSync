@@ -387,7 +387,7 @@ app.post("/matchloans", async (req, res) => {
 
   try {
     // 🔹 Fetch matching loans directly from the UserLoan table
-    const [matchedLoans] = await db.query(
+    const [matchedLoans] = db.query(
       `SELECT * FROM UserLoan 
        WHERE duration = ? 
        AND employment = ?
