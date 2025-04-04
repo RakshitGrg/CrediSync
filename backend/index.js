@@ -387,14 +387,13 @@ app.post("/matchloans", async (req, res) => {
 
   try {
     // 🔹 Fetch matching loans directly from the UserLoan table
-    const [matchedLoans] = db.query(
+    const matchedLoans = db.query(
       `SELECT * FROM UserLoan 
        WHERE duration = ? 
-       AND employment = ?
        AND amount = ? 
        AND (amount / duration) <= ?
        AND borrowerId IS NULL`,  // Loan should be available
-      [term, employment, amount, income]
+      [term, amount, income]
     );
 
     if (matchedLoans.length === 0) {
@@ -418,7 +417,7 @@ const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
 const adminRoutes = require("./routes/adminRoutes");
-app.use("/api/admin", adminRoutes);
+app.use("/api", adminRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
