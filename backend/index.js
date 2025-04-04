@@ -312,40 +312,6 @@ app.post(
 );
 
 
-// app.post("/create-loan", (req, res) => {
-//   const { email, amount, interestRate, term } = req.body; // Match frontend fields
-//   const startDate = new Date().toISOString().split("T")[0];
-
-//   // Get lenderId from the user table using email
-//   db.query(
-//     "SELECT user_id FROM user WHERE email = ?",
-//     [email], // Match frontend key
-//     (err, results) => {
-//       if (err) {
-//         console.error("Database error:", err);
-//         return res.status(500).json({ error: "Database error", details: err });
-//       }
-//       if (results.length === 0) {
-//         return res.status(404).json({ error: "Lender not found" });
-//       }
-      
-//       const lenderId = results[0].user_id;
-
-//       // Insert loan details into UserLoan table
-//       db.query(
-//         "INSERT INTO UserLoan (lenderId, borrowerId, amount, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?)",
-//         [lenderId, amount, interestRate, startDate, term], // Match frontend key
-//         (err, result) => {
-//           if (err) {
-//             console.error("Database error:", err);
-//             return res.status(500).json({ error: "Database error", details: err });
-//           }
-//           res.status(201).json({ message: "Loan created successfully", loanId: result.insertId });
-//         }
-//       );
-//     }
-//   );
-// });
 
 app.post("/createLoan", (req, res) => {
   console.log("received data from frontend");
@@ -387,7 +353,7 @@ app.post("/matchloans", async (req, res) => {
 
   try {
     // 🔹 Fetch matching loans directly from the UserLoan table
-    const matchedLoans = db.query(
+    const matchedLoans = await db.query(
       `SELECT * FROM UserLoan 
        WHERE duration = ? 
        AND amount = ? 
@@ -405,6 +371,57 @@ app.post("/matchloans", async (req, res) => {
     console.error("Error matching loans:", error);
     res.status(500).json({ error: "Server error" });
   }
+});
+
+app.post("/borrower", async (req, res) => {
+
+  const { email } = req.body;
+  console.log("request received from frontend");
+  try{
+  const queryUserId = await db.query(`SELECT user_id FROM users WHERE email = ?`, [email]);
+  if(!queryUserId){
+    return res.status(404).json({ error: 'User not found' });
+  }
+  const loanRows = await db.query(
+    'SELECT * FROM UserLoan WHERE lenderId != ?',
+    [queryUserId]
+  );
+
+  const buckets = Array.from({ length: 10 }, () => []);
+
+    loanRows.forEach(loan => {
+      const index = Math.floor(loan.amount / 10000) - 1;
+      if (index >= 0 && index < 10) {
+        buckets[index].push({
+          loanId: loan.loanId,
+          lenderId: loan.lenderId,
+          borrowerId: loan.borrowerId,
+          amount: loan.amount,
+          employment: loan.employment,
+          interestRate: loan.interestRate,
+          startDate: loan.startDate,
+          duration: loan.duration,
+          lenderDetails: {
+            name: loan.lenderName,
+            email: loan.lenderEmail,
+            phone: loan.lenderPhone
+          }
+        });
+      }
+    });
+
+    const result = {};
+    for (let i = 0; i < 10; i++) {
+      const amount = (i + 1) * 10000;
+      result[`loans_${amount}`] = buckets[i];
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+
 });
 
 

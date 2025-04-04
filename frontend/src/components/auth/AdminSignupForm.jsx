@@ -33,7 +33,7 @@ const AdminSignupForm = () => {
         const data = await response.json();
         localStorage.setItem("token", data.token); // Save token to localStorage
         localStorage.setItem("email", formData.email);
-        navigate("/admin/dashboard");
+        navigate("/admin/profile");
       } else {
         const data = await response.json();
         setErrors({ submit: data.message || "Signup failed" });

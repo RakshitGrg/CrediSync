@@ -11,7 +11,9 @@ import AuthNavbar from "./components/AuthNavbar";
 import CommonNavbar from "./components/CommonNavbar";
 import AdminNotifications from "./components/AdminNotifications";
 import UserLoan from "./components/UserLoan";
+import Borrower from "./components/Borrower";
 import UserLoanBorrower from "./components/UserLoanBorrower";
+import UserProfile from "./components/UserProfile";
 
 function App() {
   const [isLogin, setIsLogin] = useState(false);
@@ -43,6 +45,7 @@ function InnerApp({ isLogin, setIsLogin, userType, setUserType, expanded, setExp
         <Route path="/user/messages" element={<Verification />} />
         <Route path="/user/signup" element={<UserSignupForm />} />
         <Route path="/user/login" element={<UserLoginForm />} />
+        <Route path="/user/profile" element={<UserProfile />} />
 
         {/* Company Routes */}
         <Route path="/company/signup" element={<CompanySignupForm />} />
@@ -54,7 +57,7 @@ function InnerApp({ isLogin, setIsLogin, userType, setUserType, expanded, setExp
         <Route path="/admin/notification" element={<AdminNotifications expanded={expanded} />} />
 
         {/* User Loan Routes */}
-        <Route path="/user/borrower" element={<UserLoanBorrower />} />
+        <Route path="/user/borrower" element={<Borrower expanded={expanded} />} />
         <Route path="/user/lender" element={<UserLoan />} />
 
         {/* Default Route */}

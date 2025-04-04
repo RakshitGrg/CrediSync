@@ -43,12 +43,12 @@ const UserLoanBorrower = () => {
       console.log(result);
 
       if (response.ok) {
-        alert("Loan Created Successfully!");
+        alert("Loan Asked Successfully!");
       } else {
-        alert("Failed to create loan. Please try again.");
+        alert("Failed to match loan. Please try again.");
       }
     } catch (error) {
-      console.error("Error creating loan:", error);
+      console.error("Error matching loan:", error);
       alert("An error occurred. Please try again.");
     }
   };
