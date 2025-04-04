@@ -83,6 +83,7 @@ const createTables = () => {
     lenderId INT NOT NULL,
     borrowerId INT DEFAULT NULL,
     amount DECIMAL(10,2) NOT NULL,
+    employment ENUM( 'retired', 'self_employed', 'unemployed', 'part_time', 'full_time'),
     interestRate DECIMAL(5,2) NOT NULL,
     startDate DATE NOT NULL,
     duration INT NOT NULL,
@@ -348,7 +349,7 @@ app.post(
 
 app.post("/createLoan", (req, res) => {
   console.log("received data from frontend");
-  const { amount, interestRate, term, email } = req.body; 
+  const { amount, interestRate, term, employment, email } = req.body; 
   const startDate = new Date().toISOString().split("T")[0];
 
   db.query(
@@ -366,8 +367,8 @@ app.post("/createLoan", (req, res) => {
       const lenderId = results[0].user_id;
 
       db.query(
-        "INSERT INTO UserLoan (lenderId, borrowerId, amount, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?)",
-        [lenderId, amount, interestRate, startDate, term], 
+        "INSERT INTO UserLoan (lenderId, borrowerId, amount, employment, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?, ?)",
+        [lenderId, amount, employment, interestRate, startDate, term], 
         (err, result) => {
           if (err) {
             console.error("Database error:", err);
@@ -381,6 +382,31 @@ app.post("/createLoan", (req, res) => {
   );
 });
 
+app.post("/matchloans", async (req, res) => {
+  const { amount, term, employment, income } = req.body;
+
+  try {
+    // 🔹 Fetch matching loans directly from the UserLoan table
+    const [matchedLoans] = await db.query(
+      `SELECT * FROM UserLoan 
+       WHERE duration = ? 
+       AND employment = ?
+       AND amount = ? 
+       AND (amount / duration) <= ?
+       AND borrowerId IS NULL`,  // Loan should be available
+      [term, employment, amount, income]
+    );
+
+    if (matchedLoans.length === 0) {
+      return res.json({ message: "No matching loans found." });
+    }
+
+    res.json(matchedLoans); // 🔹 Just return matched loans (No DB insert)
+  } catch (error) {
+    console.error("Error matching loans:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 
 app.get("/", (req, res) => {

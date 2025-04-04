@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import { DollarSign, Percent, Calendar, User, Briefcase, FileText, CreditCard } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  DollarSign,
+  Percent,
+  Calendar,
+  User,
+  Briefcase,
+  FileText,
+  CreditCard,
+} from "lucide-react";
 
 const UserLoanBorrower = () => {
   const [requestData, setRequestData] = useState({
-    amount: '',
-    purpose: '',
-    term: '',
-    employment: '',
-    income: '',
-    creditScore: '',
-    fullName: '',
+    amount: "",
+    term: "",
+    employment: "",
+    income: "",
+    interestRate: "",
   });
 
   const handleChange = (e) => {
@@ -20,34 +26,41 @@ const UserLoanBorrower = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Loan Requested:', requestData);
-    alert('Loan Request Submitted Successfully!');
+    console.log("Loan Requested:", requestData);
+    alert("Loan Request Submitted Successfully!");
+    try {
+      const response = await fetch("http://localhost:5001/matchloans", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const result = await response.json();
+      console.log(result);
+
+      if (response.ok) {
+        alert("Loan Created Successfully!");
+      } else {
+        alert("Failed to create loan. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating loan:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <h2 className="text-3xl font-bold text-center text-green-800 mb-8">Request a Loan</h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <User className="w-4 h-4 mr-2 text-green-600" />
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="fullName"
-              value={requestData.fullName}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              placeholder="Enter your full name"
-            />
-          </div>
+        <h2 className="text-3xl font-bold text-center text-green-800 mb-8">
+          Request a Loan
+        </h2>
 
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="flex items-center text-sm font-medium text-gray-700">
               <DollarSign className="w-4 h-4 mr-2 text-green-600" />
@@ -140,6 +153,23 @@ const UserLoanBorrower = () => {
 
           <div className="space-y-2">
             <label className="flex items-center text-sm font-medium text-gray-700">
+              <Percent className="w-4 h-4 mr-2 text-green-600" />
+              Interest Rate (%)
+            </label>
+            <input
+              type="number"
+              name="interestRate"
+              value={requestData.interestRate}
+              onChange={handleChange}
+              required
+              step="0.01"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+              placeholder="Enter interest rate"
+            />
+          </div>
+
+          {/* <div className="space-y-2">
+            <label className="flex items-center text-sm font-medium text-gray-700">
               <CreditCard className="w-4 h-4 mr-2 text-green-600" />
               Credit Score
             </label>
@@ -153,8 +183,8 @@ const UserLoanBorrower = () => {
               max="850"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               placeholder="Enter your credit score (300-850)"
-            />
-          </div>
+            /> */}
+          {/* </div> */}
 
           <button
             type="submit"

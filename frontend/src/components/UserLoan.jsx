@@ -129,7 +129,7 @@
 
 
 import React, { useState } from "react";
-import { DollarSign, Percent, Calendar, User } from "lucide-react";
+import { DollarSign, Percent, Calendar, User, Briefcase } from "lucide-react";
 
 const LoanCreation = () => {
   const [loanData, setLoanData] = useState({
@@ -137,17 +137,6 @@ const LoanCreation = () => {
     interestRate: "",
     term: "",
   });
-
- // const [userEmail, setUserEmail] = useState("");
-
-  
-  // Extract user email from localStorage when the component mounts
-  // useEffect(() => {
-  //   const email = localStorage.getItem("email");
-  //   if (email) {
-  //     setUserEmail(email);
-  //   }
-  // }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -252,21 +241,26 @@ const LoanCreation = () => {
             />
           </div>
 
-          {/* <div className="space-y-2">
+          <div className="space-y-2">
             <label className="flex items-center text-sm font-medium text-gray-700">
-              <User className="w-4 h-4 mr-2 text-green-600" />
-              Borrower Name
+              <Briefcase className="w-4 h-4 mr-2 text-green-600" />
+              Employment Status
             </label>
-            <input
-              type="text"
-              name="borrower"
-              value={loanData.borrower}
+            <select
+              name="employment"
+              value={loanData.employment}
               onChange={handleChange}
               required
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              placeholder="Enter borrower name"
-            />
-          </div> */}
+            >
+              <option value="">Select employment status</option>
+              <option value="full-time">Full-Time Employed</option>
+              <option value="part-time">Part-Time Employed</option>
+              <option value="self-employed">Self-Employed</option>
+              <option value="unemployed">Unemployed</option>
+              <option value="retired">Retired</option>
+            </select>
+          </div>
 
           <button
             type="submit"
