@@ -438,7 +438,7 @@ app.post("/matchloans", async (req, res) => {
 
 app.post("/borrower", async (req, res) => {
   const { email } = req.body;
-  console.log("request received from frontend");
+  // console.log("request received from frontend");
   try {
     const queryUserId = await db.query(
       `SELECT user_id FROM users WHERE email = ?`,

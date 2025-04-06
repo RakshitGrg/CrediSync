@@ -82,7 +82,7 @@ function InnerApp({
           element={<UserSignupForm setUserType={setUserType} />}
         />
         {/* <Route path="/user/messages" element={<Verification />} /> */}
-        <Route path="/user/profile" element={<UserProfile />} />
+        <Route path="/user/profile" element={<UserProfile expanded={expanded}/>} />
         {/* <Route path="/user/wallet" element={<UserWallet />} /> */}
 
         {/* Company Routes */}
@@ -98,7 +98,7 @@ function InnerApp({
           path="/admin/signup"
           element={<AdminSignupForm setUserType={setUserType} />}
         />
-        <Route path="/admin/profile" element={<AdminProfile />} />
+        <Route path="/admin/profile" element={<AdminProfile expanded={expanded} />} />
         <Route
           path="/admin/notification"
           element={<AdminNotifications expanded={expanded} />}

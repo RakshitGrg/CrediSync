@@ -44,7 +44,7 @@ const CommonNavbar = ({ role, setExpanded, expanded }) => {
   // Define navigation items for user and admin
   const userNavItems = [
     { icon: "fa-solid fa-user", text: "Profile", onClick: () => navigate("/user/profile") },
-    { icon: "fa-solid fa-cog", text: "Settings", onClick: () => navigate("/user/settings") },
+    // { icon: "fa-solid fa-cog", text: "Settings", onClick: () => navigate("/user/settings") },
     { icon: "fa-solid fa-history", text: "Activity Log", onClick: () => navigate("/user/activity-log") },
     { icon: "fa-solid fa-envelope", text: "Borrow", onClick: () => navigate("/user/borrower") },
     { icon: "fa-solid fa-envelope", text: "Lend", onClick: () => navigate("/user/lender") },

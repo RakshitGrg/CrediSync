@@ -296,6 +296,8 @@ const Borrower = ({ expanded }) => {
   }, []);
 
   const fetchLoans = async (userEmail) => {
+
+    // console.log("Fetching loans for email:", userEmail);
     try {
       setLoading(true);
       const response = await fetch('http://localhost:5001/borrower', {
@@ -309,6 +311,8 @@ const Borrower = ({ expanded }) => {
       if (!response.ok) throw new Error('Failed to fetch loans');
       
       const data = await response.json();
+
+      console.log("Fetched loans:", data);
       // Flatten the loan buckets into a single array
       const allLoans = [];
       Object.values(data).forEach(loanGroup => {
