@@ -21,6 +21,7 @@ const createTables = () => {
       password_hash VARCHAR(255) NOT NULL,
       verification_status ENUM('none', 'pending', 'approved', 'rejected') DEFAULT 'none',
       verified_by INT NULL,
+      verified_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (verified_by) REFERENCES admins(admin_id) ON DELETE SET NULL
     );
@@ -70,10 +71,6 @@ const createTables = () => {
       email VARCHAR(255) NOT NULL UNIQUE,
       phone VARCHAR(15) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
-      verified_users JSON DEFAULT NULL,
-      verified_companies JSON DEFAULT NULL,
-      pending_users JSON DEFAULT NULL,
-      pending_companies JSON DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `;
@@ -91,6 +88,24 @@ const createTables = () => {
     FOREIGN KEY (borrowerId) REFERENCES users(user_id)
 );
 `;
+
+const createAdminAssignmentsTable = `
+CREATE TABLE IF NOT EXISTS admin_assignments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  last_assigned_admin_id INT NULL,
+  assignment_type ENUM('user', 'company') NOT NULL,
+  last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (last_assigned_admin_id) REFERENCES admins(admin_id) ON DELETE SET NULL
+);
+`;
+
+// Initialize the admin_assignments table with one row for user assignments and one for company assignments
+const initAdminAssignments = `
+INSERT IGNORE INTO admin_assignments (assignment_type) 
+VALUES ('user'), ('company');
+`;
+
+
 
   // Execute the queries
   db.query(createAdminsTable, (err) => {
@@ -119,8 +134,18 @@ const createTables = () => {
     if (err) throw err;
     console.log("Users table created or already exists");
   });
-
+  db.query(createAdminAssignmentsTable, (err) => {
+    if (err) throw err;
+    console.log("Admin assignments table created or already exists");
+    
+    // Initialize the admin_assignments table after creating it
+    db.query(initAdminAssignments, (err) => {
+      if (err) console.error("Error initializing admin assignments:", err);
+      else console.log("Admin assignments initialized");
+    });
+  });
 };
+
 
 // Call the function to create tables when the server starts
 createTables();
@@ -160,40 +185,52 @@ const storage = multer.diskStorage({
   },
 });
 
-const getAdmins = async () => {
+// Round-robin assignment function to be included in your server file
+const assignToNextAdmin = async (assignmentType) => {
   return new Promise((resolve, reject) => {
-    const query = "SELECT admin_id FROM admins";
-    db.query(query, (err, results) => {
+    // Get all active admins
+    const getAdminsQuery = `SELECT admin_id FROM admins ORDER BY admin_id`;
+    
+    db.query(getAdminsQuery, (err, admins) => {
       if (err) return reject(err);
-      resolve(results.map((row) => row.admin_id));
-    });
-  });
-};
-
-const updateAdminPendingUsers = async (adminId, userId, action = "add") => {
-  return new Promise((resolve, reject) => {
-    // Fetch the current pending_users for the admin
-    const query = "SELECT pending_users FROM admins WHERE admin_id = ?";
-    db.query(query, [adminId], (err, results) => {
-      if (err) return reject(err);
-
-      let pendingUsers = results[0].pending_users || []; // Default to an empty array if null
-
-      if (action === "add") {
-        // Add the user ID to the pending_users array
-        if (!pendingUsers.includes(userId)) {
-          pendingUsers.push(userId);
-        }
-      } else if (action === "remove") {
-        // Remove the user ID from the pending_users array
-        pendingUsers = pendingUsers.filter((id) => id !== userId);
+      
+      if (admins.length === 0) {
+        return reject(new Error("No admins available for assignment"));
       }
-
-      // Update the pending_users field in the database
-      const updateQuery = "UPDATE admins SET pending_users = ? WHERE admin_id = ?";
-      db.query(updateQuery, [JSON.stringify(pendingUsers), adminId], (err) => {
+      
+      // Get the last assigned admin for this type
+      const getLastAssignedQuery = `
+        SELECT last_assigned_admin_id 
+        FROM admin_assignments 
+        WHERE assignment_type = ?
+      `;
+      
+      db.query(getLastAssignedQuery, [assignmentType], (err, results) => {
         if (err) return reject(err);
-        resolve();
+        
+        let lastAssignedAdminId = results[0]?.last_assigned_admin_id;
+        let nextAdminIndex = 0;
+        
+        // Find the index of the last assigned admin
+        if (lastAssignedAdminId) {
+          const lastIndex = admins.findIndex(admin => admin.admin_id === lastAssignedAdminId);
+          nextAdminIndex = (lastIndex + 1) % admins.length;
+        }
+        
+        // Get the next admin in rotation
+        const nextAdminId = admins[nextAdminIndex].admin_id;
+        
+        // Update the last assigned admin
+        const updateAssignmentQuery = `
+          UPDATE admin_assignments 
+          SET last_assigned_admin_id = ? 
+          WHERE assignment_type = ?
+        `;
+        
+        db.query(updateAssignmentQuery, [nextAdminId, assignmentType], (err) => {
+          if (err) return reject(err);
+          resolve(nextAdminId);
+        });
       });
     });
   });
@@ -201,8 +238,8 @@ const updateAdminPendingUsers = async (adminId, userId, action = "add") => {
 
 const upload = multer({ storage });
 
-let lastAssignedAdminIndex = -1; // Track the last assigned admin
 
+// Update your existing upload endpoint
 app.post(
   "/upload",
   upload.fields([
@@ -232,77 +269,76 @@ app.post(
 
         const userId = result[0].user_id;
 
-        // Fetch all admins
-        const admins = await getAdmins();
-        if (admins.length === 0) {
-          return res.status(500).json({ message: "No admins available." });
-        }
+        // Use the round-robin assignment function
+        try {
+          const assignedAdminId = await assignToNextAdmin('user');
+          
+          // Store the uploaded document details
+          const addressProofUrl = req.files.addressProof
+            ? req.files.addressProof[0].filename
+            : null;
+          const bankStatementUrl = req.files.bankStatement
+            ? req.files.bankStatement[0].filename
+            : null;
 
-        // Assign the request to the next admin in round-robin fashion
-        lastAssignedAdminIndex = (lastAssignedAdminIndex + 1) % admins.length;
-        const assignedAdminId = admins[lastAssignedAdminIndex];
+          // Insert the document details and Aadhar number into the user_documents table
+          const insertDocumentQuery = `
+            INSERT INTO user_documents (user_id, aadhar_number, address_proof_url, bank_statement_url)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+            aadhar_number = VALUES(aadhar_number),
+            address_proof_url = VALUES(address_proof_url),
+            bank_statement_url = VALUES(bank_statement_url)
+          `;
 
-        // Add the user ID to the assigned admin's pending_users
-        await updateAdminPendingUsers(assignedAdminId, userId, "add");
-
-        // Store the uploaded document details
-        const addressProofUrl = req.files.addressProof
-          ? req.files.addressProof[0].filename
-          : null;
-        const bankStatementUrl = req.files.bankStatement
-          ? req.files.bankStatement[0].filename
-          : null;
-
-        // Insert the document details and Aadhar number into the user_documents table
-        const insertDocumentQuery = `
-          INSERT INTO user_documents (user_id, aadhar_number, address_proof_url, bank_statement_url)
-          VALUES (?, ?, ?, ?)
-        `;
-
-        db.query(
-          insertDocumentQuery,
-          [userId, aadhar, addressProofUrl, bankStatementUrl],
-          (err, result) => {
-            if (err) {
-              console.error("Error inserting document details:", err);
-              return res
-                .status(500)
-                .json({ message: "Failed to insert document details." });
-            }
-
-            // Update the verification_status and assign the admin
-            const updateVerificationStatusQuery = `
-              UPDATE users
-              SET verification_status = 'pending', verified_by = ?
-              WHERE user_id = ?
-            `;
-
-            db.query(
-              updateVerificationStatusQuery,
-              [assignedAdminId, userId],
-              (err, result) => {
-                if (err) {
-                  console.error("Error updating verification status:", err);
-                  return res
-                    .status(500)
-                    .json({ message: "Failed to update verification status." });
-                }
-
-                // Send success response
-                let responseMessage = "Files uploaded and data saved successfully. Verification status set to 'pending'.";
-
-                if (addressProofUrl) {
-                  responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
-                }
-                if (bankStatementUrl) {
-                  responseMessage += ` Bank Statement uploaded: ${bankStatementUrl}.`;
-                }
-
-                res.json({ message: responseMessage, assignedAdminId });
+          db.query(
+            insertDocumentQuery,
+            [userId, aadhar, addressProofUrl, bankStatementUrl],
+            (err, result) => {
+              if (err) {
+                console.error("Error inserting document details:", err);
+                return res
+                  .status(500)
+                  .json({ message: "Failed to insert document details." });
               }
-            );
-          }
-        );
+
+              // Update the verification_status and assign the admin
+              const updateVerificationStatusQuery = `
+                UPDATE users
+                SET verification_status = 'pending', verified_by = ?
+                WHERE user_id = ?
+              `;
+
+              db.query(
+                updateVerificationStatusQuery,
+                [assignedAdminId, userId],
+                (err, result) => {
+                  if (err) {
+                    console.error("Error updating verification status:", err);
+                    return res
+                      .status(500)
+                      .json({ message: "Failed to update verification status." });
+                  }
+
+                  // Send success response
+                  let responseMessage = "Files uploaded and data saved successfully. Verification status set to 'pending'.";
+
+                  if (addressProofUrl) {
+                    responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
+                  }
+                  if (bankStatementUrl) {
+                    responseMessage += ` Bank Statement uploaded: ${bankStatementUrl}.`;
+                  }
+
+                  res.json({ message: responseMessage, assignedAdminId });
+                }
+              );
+            }
+          );
+        } catch (err) {
+          console.error("Error assigning admin:", err);
+          return res.status(500).json({ message: "Failed to assign admin." });
+        }
       });
     } catch (error) {
       console.error(error);
@@ -310,8 +346,6 @@ app.post(
     }
   }
 );
-
-
 
 app.post("/createLoan", (req, res) => {
   console.log("received data from frontend");
@@ -428,7 +462,7 @@ app.post("/borrower", async (req, res) => {
 app.get("/", (req, res) => {
   res.send("CREDISYNC Backend Running!");
 });
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);

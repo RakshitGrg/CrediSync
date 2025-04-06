@@ -4,7 +4,7 @@ import Input from "../ui/Input";
 import PasswordInput from "../ui/PasswordInput";
 import Button from "../ui/Button";
 
-const AdminSignupForm = () => {
+const AdminSignupForm = ({setUserType}) => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -33,6 +33,10 @@ const AdminSignupForm = () => {
         const data = await response.json();
         localStorage.setItem("token", data.token); // Save token to localStorage
         localStorage.setItem("email", formData.email);
+        localStorage.setItem("userType", "admin");
+        if (setUserType && typeof setUserType === 'function') {
+          setUserType("admin");
+        }
         navigate("/admin/profile");
       } else {
         const data = await response.json();

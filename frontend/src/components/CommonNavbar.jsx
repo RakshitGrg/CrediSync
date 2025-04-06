@@ -48,11 +48,14 @@ const CommonNavbar = ({ role, setExpanded, expanded }) => {
   ];
 
   const adminNavItems = [
-    { icon: "fa-solid fa-bell", text: "Notifications", onClick: () => navigate("/admin/notification") },
-    { icon: "fa-solid fa-building", text: "Companies", onClick: () => navigate("/admin/companies") },
-    { icon: "fa-solid fa-history", text: "Activity Log", onClick: () => navigate("/admin/activity-log") },
-    { icon: "fa-solid fa-question-circle", text: "Help", onClick: () => navigate("/admin/help") },
-  ];
+    { icon: "fa-solid fa-user", text: "Profile", onClick: () => navigate("/admin/profile") },
+  { icon: "fa-solid fa-bell", text: "Notifications", onClick: () => navigate("/admin/notification") },
+
+  { icon: "fa-solid fa-building", text: "Companies", onClick: () => navigate("/admin/companies") },
+  { icon: "fa-solid fa-history", text: "Activity Log", onClick: () => navigate("/admin/activity-log") },
+  { icon: "fa-solid fa-question-circle", text: "Help", onClick: () => navigate("/admin/help") },
+];
+
 
   // Select navigation items based on role
   const navItems = role === "admin" ? adminNavItems : userNavItems;

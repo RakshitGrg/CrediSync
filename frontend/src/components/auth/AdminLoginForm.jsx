@@ -4,7 +4,7 @@ import Input from "../ui/Input";
 import PasswordInput from "../ui/PasswordInput";
 import Button from "../ui/Button";
 
-const AdminLoginForm = () => {
+const AdminLoginForm = ({setUserType}) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -31,6 +31,10 @@ const AdminLoginForm = () => {
         const data = await response.json();
         localStorage.setItem("token", data.token); // Save token to localStorage
         localStorage.setItem("email", formData.email);
+        localStorage.setItem("userType", "admin");
+        if (setUserType && typeof setUserType === 'function') {
+          setUserType("admin");
+        }
         navigate("/admin/profile");
       } else {
         const data = await response.json();

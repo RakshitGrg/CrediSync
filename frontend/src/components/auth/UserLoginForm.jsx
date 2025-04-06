@@ -4,7 +4,7 @@ import Input from "../ui/Input";
 import PasswordInput from "../ui/PasswordInput";
 import Button from "../ui/Button";
 
-const UserLoginForm = () => {
+const UserLoginForm = ({setUserType}) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -26,8 +26,15 @@ const UserLoginForm = () => {
 
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem("token", data.token); // Save token to localStorage
+        localStorage.setItem("token", data.token);
         localStorage.setItem("email", formData.email);
+        localStorage.setItem("userType", "user");
+        
+        // Check if setUserType exists before calling it
+        if (setUserType && typeof setUserType === 'function') {
+          setUserType("user");
+        }
+        
         navigate("/user/profile");
       } else {
         const data = await response.json();
@@ -35,6 +42,7 @@ const UserLoginForm = () => {
       }
     } catch (error) {
       setErrors({ submit: "Network error occurred" });
+      console.error("Login error:", error);
     }
   };
 
