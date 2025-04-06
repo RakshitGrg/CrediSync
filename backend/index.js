@@ -410,7 +410,6 @@ app.post("/createLoan", (req, res) => {
     }
   );
 });
-
 app.post("/matchloans", async (req, res) => {
   const { amount, term, employment, income } = req.body;
 
@@ -421,7 +420,7 @@ app.post("/matchloans", async (req, res) => {
        WHERE duration = ? 
        AND amount = ? 
        AND (amount / duration) <= ?
-       AND borrowerId IS NULL`, // Loan should be available
+       AND borrowerId IS NULL`,  // Loan should be available
       [term, amount, income]
     );
 
@@ -438,53 +437,47 @@ app.post("/matchloans", async (req, res) => {
 
 app.post("/borrower", async (req, res) => {
   const { email } = req.body;
-  // console.log("request received from frontend");
+  console.log("request received from frontend");
+  
   try {
-    const queryUserId = await db.query(
-      `SELECT user_id FROM users WHERE email = ?`,
-      [email]
-    );
-    if (!queryUserId) {
-      return res.status(404).json({ error: "User not found" });
+    // Get user ID
+    const queryUserId = await db.query(`SELECT user_id FROM users WHERE email = ?`, [email]);
+    
+    if(!queryUserId || queryUserId.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
     }
-    const loanRows = await db.query(
-      "SELECT * FROM UserLoan WHERE lenderId != ?",
-      [queryUserId]
+    
+    const userId = queryUserId[0].user_id;
+    
+    // Get all loans where the user is not the lender
+    const loans = await db.query(
+      'SELECT * FROM UserLoan WHERE lenderId != ?',
+      [userId]
     );
 
-    const buckets = Array.from({ length: 10 }, () => []);
-
-    loanRows.forEach((loan) => {
-      const index = Math.floor(loan.amount / 10000) - 1;
-      if (index >= 0 && index < 10) {
-        buckets[index].push({
-          loanId: loan.loanId,
-          lenderId: loan.lenderId,
-          borrowerId: loan.borrowerId,
-          amount: loan.amount,
-          employment: loan.employment,
-          interestRate: loan.interestRate,
-          startDate: loan.startDate,
-          duration: loan.duration,
-          lenderDetails: {
-            name: loan.lenderName,
-            email: loan.lenderEmail,
-            phone: loan.lenderPhone,
-          },
-        });
+    // Format the loan data
+    const formattedLoans = loans.map(loan => ({
+      loanId: loan.loanId,
+      lenderId: loan.lenderId,
+      borrowerId: loan.borrowerId,
+      amount: loan.amount,
+      employment: loan.employment,
+      interestRate: loan.interestRate,
+      startDate: loan.startDate,
+      duration: loan.duration,
+      lenderDetails: {
+        name: loan.lenderName,
+        email: loan.lenderEmail,
+        phone: loan.lenderPhone
       }
-    });
+    }));
 
-    const result = {};
-    for (let i = 0; i < 10; i++) {
-      const amount = (i + 1) * 10000;
-      result[`loans_${amount}`] = buckets[i];
-    }
-
-    res.json(result);
+    console.log('Returning loans:', formattedLoans);
+    res.json({ loans: formattedLoans });
+    
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

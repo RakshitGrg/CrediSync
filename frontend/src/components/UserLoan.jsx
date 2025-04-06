@@ -1,133 +1,3 @@
-// import React, { useState } from "react";
-
-// const LoanCreation = () => {
-//     const [loanData, setLoanData] = useState({
-//         amount: "",
-//         interestRate: "",
-//         term: "",
-//         borrower: "",
-//     });
-
-//     // Handle input change
-//     const handleChange = (e) => {
-//         const { name, value } = e.target;
-//         setLoanData((prevData) => ({
-//             ...prevData,
-//             [name]: value,
-//         }));
-//     };
-
-//     // Handle form submission
-//     const handleSubmit = (e) => {
-//         e.preventDefault();
-//         console.log("Loan Created:", loanData);
-//         alert("Loan Created Successfully!");
-        
-//         // Here you can send data to the backend using fetch or axios
-//     };
-
-//     return (
-//         <div style={styles.container}>
-//             <h2 style={styles.heading}>Create a New Loan</h2>
-//             <form onSubmit={handleSubmit} style={styles.form}>
-//                 {/* Loan Amount */}
-//                 <label style={styles.label}>Loan Amount ($)</label>
-//                 <input
-//                     type="number"
-//                     name="amount"
-//                     value={loanData.amount}
-//                     onChange={handleChange}
-//                     required
-//                     style={styles.input}
-//                 />
-
-//                 {/* Interest Rate */}
-//                 <label style={styles.label}>Interest Rate (%)</label>
-//                 <input
-//                     type="number"
-//                     name="interestRate"
-//                     value={loanData.interestRate}
-//                     onChange={handleChange}
-//                     required
-//                     style={styles.input}
-//                 />
-
-//                 {/* Loan Term */}
-//                 <label style={styles.label}>Loan Term (Months)</label>
-//                 <input
-//                     type="number"
-//                     name="term"
-//                     value={loanData.term}
-//                     onChange={handleChange}
-//                     required
-//                     style={styles.input}
-//                 />
-
-//                 {/* Borrower Name */}
-//                 <label style={styles.label}>Borrower Name</label>
-//                 <input
-//                     type="text"
-//                     name="borrower"
-//                     value={loanData.borrower}
-//                     onChange={handleChange}
-//                     required
-//                     style={styles.input}
-//                 />
-
-//                 {/* Submit Button */}
-//                 <button type="submit" style={styles.button}>
-//                     Create Loan
-//                 </button>
-//             </form>
-//         </div>
-//     );
-// };
-
-// // Inline styles
-// const styles = {
-//     container: {
-//         maxWidth: "400px",
-//         margin: "auto",
-//         padding: "20px",
-//         borderRadius: "10px",
-//         boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-//         backgroundColor: "#fff",
-//         textAlign: "center",
-//     },
-//     heading: {
-//         fontSize: "20px",
-//         marginBottom: "10px",
-//     },
-//     form: {
-//         display: "flex",
-//         flexDirection: "column",
-//     },
-//     label: {
-//         marginBottom: "5px",
-//         fontSize: "14px",
-//         textAlign: "left",
-//     },
-//     input: {
-//         padding: "8px",
-//         marginBottom: "10px",
-//         borderRadius: "5px",
-//         border: "1px solid #ccc",
-//     },
-//     button: {
-//         padding: "10px",
-//         backgroundColor: "#007bff",
-//         color: "#fff",
-//         border: "none",
-//         borderRadius: "5px",
-//         cursor: "pointer",
-//         fontSize: "16px",
-//     },
-// };
-
-// export default LoanCreation;
-
-
-
 import React, { useState } from "react";
 import { DollarSign, Percent, Calendar, User, Briefcase } from "lucide-react";
 
@@ -136,7 +6,27 @@ const LoanCreation = () => {
     amount: "",
     interestRate: "",
     term: "",
+    employment: "",
   });
+  
+  const [errors, setErrors] = useState({
+    amount: "",
+    interestRate: "",
+    term: "",
+  });
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case "amount":
+        return value > 100000 ? "Amount cannot exceed $100,000" : "";
+      case "interestRate":
+        return value > 20 ? "Interest rate cannot exceed 20%" : "";
+      case "term":
+        return value > 120 ? "Term cannot exceed 120 months" : "";
+      default:
+        return "";
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -144,16 +34,31 @@ const LoanCreation = () => {
       ...prevData,
       [name]: value,
     }));
+    
+    const error = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
   };
-
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-  //   console.log("Loan Created:", loanData);
-  //   alert("Loan Created Successfully!");
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate all fields before submission
+    const newErrors = {
+      amount: validateField("amount", loanData.amount),
+      interestRate: validateField("interestRate", loanData.interestRate),
+      term: validateField("term", loanData.term),
+    };
+    
+    setErrors(newErrors);
+    
+    // Check if there are any errors
+    if (Object.values(newErrors).some(error => error !== "")) {
+      return; // Don't submit if there are errors
+    }
+    
     const userEmail = localStorage.getItem("email");
     const loanDetails = {
       ...loanData,
@@ -183,7 +88,6 @@ const LoanCreation = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
@@ -203,9 +107,15 @@ const LoanCreation = () => {
               value={loanData.amount}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              placeholder="Enter loan amount"
+              max="100000"
+              className={`w-full px-4 py-3 rounded-lg border ${
+                errors.amount ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors`}
+              placeholder="Enter loan amount (max $100,000)"
             />
+            {errors.amount && (
+              <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -220,9 +130,15 @@ const LoanCreation = () => {
               onChange={handleChange}
               required
               step="0.01"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              placeholder="Enter interest rate"
+              max="20"
+              className={`w-full px-4 py-3 rounded-lg border ${
+                errors.interestRate ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors`}
+              placeholder="Enter interest rate (max 20%)"
             />
+            {errors.interestRate && (
+              <p className="text-red-500 text-xs mt-1">{errors.interestRate}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -236,9 +152,15 @@ const LoanCreation = () => {
               value={loanData.term}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              placeholder="Enter loan term"
+              max="120"
+              className={`w-full px-4 py-3 rounded-lg border ${
+                errors.term ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors`}
+              placeholder="Enter loan term (max 120 months)"
             />
+            {errors.term && (
+              <p className="text-red-500 text-xs mt-1">{errors.term}</p>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -318,6 +318,8 @@ const Borrower = ({ expanded }) => {
       Object.values(data).forEach(loanGroup => {
         allLoans.push(...loanGroup);
       });
+
+      console.log("All loans:", allLoans);
       
       setLoans(allLoans);
     } catch (err) {
