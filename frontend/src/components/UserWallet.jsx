@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { PlusCircle, Wallet, ArrowDownCircle, Clock, RefreshCw, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  PlusCircle,
+  Wallet,
+  ArrowDownCircle,
+  Clock,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 // Main component with proper hook usage
 const UserWallet = ({ isOpen, onClose }) => {
   const [balance, setBalance] = useState(0);
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [showTransactions, setShowTransactions] = useState(false);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState("");
 
   // Fetch token from localStorage once component mounts
   useEffect(() => {
@@ -29,10 +36,10 @@ const UserWallet = ({ isOpen, onClose }) => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/wallet/balance', {
+      const response = await fetch("http://localhost:5001/api/wallet/balance", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       const data = await response.json();
       if (response.ok) {
@@ -41,60 +48,63 @@ const UserWallet = ({ isOpen, onClose }) => {
         setMessage(`Error: ${data.message}`);
       }
     } catch (error) {
-      setMessage('Failed to fetch balance');
+      setMessage("Failed to fetch balance");
       console.error(error);
     }
   };
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/wallet/transactions', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        "http://localhost:5001/api/wallet/transactions",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       const data = await response.json();
       if (response.ok) {
         setTransactions(data.transactions);
       }
     } catch (error) {
-      console.error('Failed to fetch transactions', error);
+      console.error("Failed to fetch transactions", error);
     }
   };
 
   const handleDeposit = async () => {
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      setMessage('Please enter a valid amount');
+      setMessage("Please enter a valid amount");
       return;
     }
 
     setIsLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
-      const response = await fetch('http://localhost:5001/api/wallet/deposit', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5001/api/wallet/deposit", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: parseFloat(amount)
+          amount: parseFloat(amount),
         }),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setBalance(data.newBalance);
-        setAmount('');
-        setMessage('Money added successfully!');
+        setAmount("");
+        setMessage("Money added successfully!");
         fetchTransactions();
       } else {
         setMessage(`Error: ${data.message}`);
       }
     } catch (error) {
-      setMessage('Failed to add money');
+      setMessage("Failed to add money");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -107,9 +117,9 @@ const UserWallet = ({ isOpen, onClose }) => {
   };
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
     }).format(value);
   };
 
@@ -140,17 +150,17 @@ const UserWallet = ({ isOpen, onClose }) => {
               </div>
               <h2 className="text-2xl font-semibold">Wallet</h2>
             </div>
-            
+
             {/* Header Action Buttons - Positioned side by side */}
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={refreshData}
                 className="text-green-600 bg-white p-2 rounded-full hover:bg-green-50 transition-colors"
                 aria-label="Refresh wallet data"
               >
                 <RefreshCw size={18} />
               </button>
-              
+
               <button
                 onClick={onClose}
                 className="text-white bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors"
@@ -160,7 +170,7 @@ const UserWallet = ({ isOpen, onClose }) => {
               </button>
             </div>
           </div>
-          
+
           <div className="mt-6">
             <p className="text-sm text-white/80">Current Balance</p>
             <p className="text-4xl font-bold mt-1">{formatCurrency(balance)}</p>
@@ -173,10 +183,12 @@ const UserWallet = ({ isOpen, onClose }) => {
             <PlusCircle size={18} className="mr-2 text-green-600" />
             Add Money
           </h3>
-          
+
           <div className="flex space-x-2">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₹</span>
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                ₹
+              </span>
               <input
                 type="number"
                 value={amount}
@@ -203,10 +215,20 @@ const UserWallet = ({ isOpen, onClose }) => {
               )}
             </button>
           </div>
-          
+
           {message && (
-            <div className={`mt-3 p-3 rounded-lg ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} flex items-center`}>
-              {message.includes('Error') ? (
+            <div
+              className={`mt-3 p-3 rounded-lg ${
+                message.toLowerCase().includes("error") ||
+                message.toLowerCase().includes("failed") ||
+                message.toLowerCase().includes("invalid")
+                  ? "bg-red-100 text-red-700"
+                  : "bg-green-100 text-green-700"
+              } flex items-center`}
+            >
+              {message.toLowerCase().includes("error") ||
+              message.toLowerCase().includes("failed") ||
+              message.toLowerCase().includes("invalid") ? (
                 <X size={16} className="mr-2" />
               ) : (
                 <PlusCircle size={16} className="mr-2" />
@@ -214,7 +236,7 @@ const UserWallet = ({ isOpen, onClose }) => {
               {message}
             </div>
           )}
-          
+
           {/* Quick Amount Buttons */}
           <div className="mt-4 flex flex-wrap gap-2">
             {[100, 500, 1000, 5000].map((quickAmount) => (
@@ -231,7 +253,7 @@ const UserWallet = ({ isOpen, onClose }) => {
 
         {/* Transactions */}
         <div className="p-6">
-          <button 
+          <button
             onClick={() => setShowTransactions(!showTransactions)}
             className="flex items-center text-gray-700 hover:text-green-700 space-x-2 transition-colors w-full justify-between bg-white p-3 rounded-lg border border-gray-200 hover:border-green-200"
           >
@@ -243,7 +265,13 @@ const UserWallet = ({ isOpen, onClose }) => {
               <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full mr-2">
                 {transactions.length}
               </span>
-              <span className={`transform transition-transform ${showTransactions ? 'rotate-180' : ''}`}>▼</span>
+              <span
+                className={`transform transition-transform ${
+                  showTransactions ? "rotate-180" : ""
+                }`}
+              >
+                ▼
+              </span>
             </div>
           </button>
 
@@ -252,27 +280,52 @@ const UserWallet = ({ isOpen, onClose }) => {
               {transactions.length > 0 ? (
                 <div className="max-h-80 overflow-y-auto">
                   {transactions.map((tx, index) => (
-                    <div 
-                      key={tx.transaction_id} 
+                    <div
+                      key={tx.transaction_id}
                       className={`flex items-center justify-between p-4 ${
-                        index !== transactions.length - 1 ? 'border-b border-gray-100' : ''
+                        index !== transactions.length - 1
+                          ? "border-b border-gray-100"
+                          : ""
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${tx.transaction_type === 'deposit' ? 'bg-green-100' : 'bg-red-100'}`}>
-                          {tx.transaction_type === 'deposit' ? (
-                            <ArrowDownCircle size={18} className="text-green-600" />
+                        <div
+                          className={`p-2 rounded-full ${
+                            tx.transaction_type === "deposit"
+                              ? "bg-green-100"
+                              : "bg-red-100"
+                          }`}
+                        >
+                          {tx.transaction_type === "deposit" ? (
+                            <ArrowDownCircle
+                              size={18}
+                              className="text-green-600"
+                            />
                           ) : (
-                            <ArrowDownCircle size={18} className="text-red-600 transform rotate-180" />
+                            <ArrowDownCircle
+                              size={18}
+                              className="text-red-600 transform rotate-180"
+                            />
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800">{tx.description}</p>
-                          <p className="text-xs text-gray-500">{formatDate(tx.created_at)}</p>
+                          <p className="font-medium text-gray-800">
+                            {tx.description}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(tx.created_at)}
+                          </p>
                         </div>
                       </div>
-                      <div className={`font-medium ${tx.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
-                        {tx.transaction_type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
+                      <div
+                        className={`font-medium ${
+                          tx.transaction_type === "deposit"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {tx.transaction_type === "deposit" ? "+" : "-"}
+                        {formatCurrency(tx.amount)}
                       </div>
                     </div>
                   ))}
