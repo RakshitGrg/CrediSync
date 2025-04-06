@@ -68,10 +68,9 @@ router.get("/admin/pending-companies", authenticateJWT, (req, res) => {
 });
 
 // Get verification history (approved/rejected users and companies)
+// Get verification history (approved/rejected users and companies)
 router.get("/admin/verification-history", authenticateJWT, (req, res) => {
   const adminId = req.user.adminId;
-
-  console.log("hello", adminId)
   
   const usersQuery = `
     SELECT 
@@ -81,7 +80,9 @@ router.get("/admin/verification-history", authenticateJWT, (req, res) => {
       u.email,
       u.verification_status as status,
       u.verified_at,
-      ud.aadhar_number
+      ud.aadhar_number,
+      ud.address_proof_url,
+      ud.bank_statement_url
     FROM users u
     LEFT JOIN user_documents ud ON u.user_id = ud.user_id
     WHERE u.verification_status IN ('approved', 'rejected') 
@@ -95,8 +96,12 @@ router.get("/admin/verification-history", authenticateJWT, (req, res) => {
       c.company_name as name,
       c.email,
       c.verification_status as status,
-      c.registration_no
+      c.verified_at,
+      c.registration_no,
+      c.business_address,
+      cd.registration_certificate_url
     FROM companies c
+    LEFT JOIN company_documents cd ON c.company_id = cd.company_id
     WHERE c.verification_status IN ('approved', 'rejected') 
     AND c.verified_by = ?
   `;

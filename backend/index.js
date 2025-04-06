@@ -59,6 +59,7 @@ const createTables = () => {
       business_address TEXT NOT NULL,
       verification_status ENUM('none', 'pending', 'approved', 'rejected') DEFAULT 'none',
       verified_by INT NULL,
+      verified_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (verified_by) REFERENCES admins(admin_id) ON DELETE SET NULL
     )
