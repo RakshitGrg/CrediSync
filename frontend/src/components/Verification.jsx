@@ -58,14 +58,15 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
     }
   };
 
+  // Define placeholder style as a regular CSS object
+  const placeholderStyle = {
+    "::placeholder": {
+      color: "#9ca3af"
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <style jsx>{`
-        input::placeholder {
-          color: #9ca3af; /* Custom placeholder color */
-        }
-      `}</style>
-
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -73,7 +74,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
       />
 
       {/* Popup Box */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-[48rem] max-w-[95vw] max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-in fade-in duration-200">
         <div className="absolute right-4 top-4">
           <button
             onClick={onClose}
@@ -108,7 +109,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
                 type="text"
                 value={aadharNumber}
                 onChange={handleAadharChange}
-                className="text-black w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                className="text-black w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 placeholder-gray-400"
                 placeholder="Enter your 12-digit Aadhar number"
               />
             </div>

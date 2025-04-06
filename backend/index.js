@@ -23,6 +23,7 @@ const createTables = () => {
       verified_by INT NULL,
       verified_at TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      wallet_balance DECIMAL(10,2) DEFAULT 0.00,
       FOREIGN KEY (verified_by) REFERENCES admins(admin_id) ON DELETE SET NULL
     );
   `;
@@ -37,7 +38,16 @@ const createTables = () => {
       FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
     );
   `;
-
+  const wallet_transactions = `CREATE TABLE IF NOT EXISTS wallet_transactions (
+    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    transaction_type ENUM('deposit', 'withdrawal', 'transfer') NOT NULL,
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+  );
+  `;
   const createCompaniesTable = `
     CREATE TABLE IF NOT EXISTS companies (
       company_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -89,7 +99,7 @@ const createTables = () => {
 );
 `;
 
-const createAdminAssignmentsTable = `
+  const createAdminAssignmentsTable = `
 CREATE TABLE IF NOT EXISTS admin_assignments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   last_assigned_admin_id INT NULL,
@@ -99,13 +109,11 @@ CREATE TABLE IF NOT EXISTS admin_assignments (
 );
 `;
 
-// Initialize the admin_assignments table with one row for user assignments and one for company assignments
-const initAdminAssignments = `
+  // Initialize the admin_assignments table with one row for user assignments and one for company assignments
+  const initAdminAssignments = `
 INSERT IGNORE INTO admin_assignments (assignment_type) 
 VALUES ('user'), ('company');
 `;
-
-
 
   // Execute the queries
   db.query(createAdminsTable, (err) => {
@@ -137,15 +145,20 @@ VALUES ('user'), ('company');
   db.query(createAdminAssignmentsTable, (err) => {
     if (err) throw err;
     console.log("Admin assignments table created or already exists");
-    
+
     // Initialize the admin_assignments table after creating it
     db.query(initAdminAssignments, (err) => {
       if (err) console.error("Error initializing admin assignments:", err);
       else console.log("Admin assignments initialized");
     });
   });
-};
 
+  db.query(wallet_transactions, (err) => {
+    if (err) throw err;
+    console.log("Wallet transactions table created or already exists");
+  }
+  );
+};
 
 // Call the function to create tables when the server starts
 createTables();
@@ -190,54 +203,59 @@ const assignToNextAdmin = async (assignmentType) => {
   return new Promise((resolve, reject) => {
     // Get all active admins
     const getAdminsQuery = `SELECT admin_id FROM admins ORDER BY admin_id`;
-    
+
     db.query(getAdminsQuery, (err, admins) => {
       if (err) return reject(err);
-      
+
       if (admins.length === 0) {
         return reject(new Error("No admins available for assignment"));
       }
-      
+
       // Get the last assigned admin for this type
       const getLastAssignedQuery = `
         SELECT last_assigned_admin_id 
         FROM admin_assignments 
         WHERE assignment_type = ?
       `;
-      
+
       db.query(getLastAssignedQuery, [assignmentType], (err, results) => {
         if (err) return reject(err);
-        
+
         let lastAssignedAdminId = results[0]?.last_assigned_admin_id;
         let nextAdminIndex = 0;
-        
+
         // Find the index of the last assigned admin
         if (lastAssignedAdminId) {
-          const lastIndex = admins.findIndex(admin => admin.admin_id === lastAssignedAdminId);
+          const lastIndex = admins.findIndex(
+            (admin) => admin.admin_id === lastAssignedAdminId
+          );
           nextAdminIndex = (lastIndex + 1) % admins.length;
         }
-        
+
         // Get the next admin in rotation
         const nextAdminId = admins[nextAdminIndex].admin_id;
-        
+
         // Update the last assigned admin
         const updateAssignmentQuery = `
           UPDATE admin_assignments 
           SET last_assigned_admin_id = ? 
           WHERE assignment_type = ?
         `;
-        
-        db.query(updateAssignmentQuery, [nextAdminId, assignmentType], (err) => {
-          if (err) return reject(err);
-          resolve(nextAdminId);
-        });
+
+        db.query(
+          updateAssignmentQuery,
+          [nextAdminId, assignmentType],
+          (err) => {
+            if (err) return reject(err);
+            resolve(nextAdminId);
+          }
+        );
       });
     });
   });
 };
 
 const upload = multer({ storage });
-
 
 // Update your existing upload endpoint
 app.post(
@@ -271,8 +289,8 @@ app.post(
 
         // Use the round-robin assignment function
         try {
-          const assignedAdminId = await assignToNextAdmin('user');
-          
+          const assignedAdminId = await assignToNextAdmin("user");
+
           // Store the uploaded document details
           const addressProofUrl = req.files.addressProof
             ? req.files.addressProof[0].filename
@@ -317,11 +335,14 @@ app.post(
                     console.error("Error updating verification status:", err);
                     return res
                       .status(500)
-                      .json({ message: "Failed to update verification status." });
+                      .json({
+                        message: "Failed to update verification status.",
+                      });
                   }
 
                   // Send success response
-                  let responseMessage = "Files uploaded and data saved successfully. Verification status set to 'pending'.";
+                  let responseMessage =
+                    "Files uploaded and data saved successfully. Verification status set to 'pending'.";
 
                   if (addressProofUrl) {
                     responseMessage += ` Address Proof uploaded: ${addressProofUrl}.`;
@@ -349,12 +370,12 @@ app.post(
 
 app.post("/createLoan", (req, res) => {
   console.log("received data from frontend");
-  const { amount, interestRate, term, employment, email } = req.body; 
+  const { amount, interestRate, term, employment, email } = req.body;
   const startDate = new Date().toISOString().split("T")[0];
 
   db.query(
     "SELECT user_id FROM users WHERE email = ?",
-    [email], 
+    [email],
     (err, results) => {
       if (err) {
         console.error("Database error:", err);
@@ -363,19 +384,26 @@ app.post("/createLoan", (req, res) => {
       if (results.length === 0) {
         return res.status(404).json({ error: "Lender not found" });
       }
-      
+
       const lenderId = results[0].user_id;
 
       db.query(
         "INSERT INTO UserLoan (lenderId, borrowerId, amount, employment, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?, ?)",
-        [lenderId, amount, employment, interestRate, startDate, term], 
+        [lenderId, amount, employment, interestRate, startDate, term],
         (err, result) => {
           if (err) {
             console.error("Database error:", err);
             console.log(err);
-            return res.status(500).json({ error: "Database error", details: err });
+            return res
+              .status(500)
+              .json({ error: "Database error", details: err });
           }
-          res.status(201).json({ message: "Loan created successfully", loanId: result.insertId });
+          res
+            .status(201)
+            .json({
+              message: "Loan created successfully",
+              loanId: result.insertId,
+            });
         }
       );
     }
@@ -392,7 +420,7 @@ app.post("/matchloans", async (req, res) => {
        WHERE duration = ? 
        AND amount = ? 
        AND (amount / duration) <= ?
-       AND borrowerId IS NULL`,  // Loan should be available
+       AND borrowerId IS NULL`, // Loan should be available
       [term, amount, income]
     );
 
@@ -408,22 +436,24 @@ app.post("/matchloans", async (req, res) => {
 });
 
 app.post("/borrower", async (req, res) => {
-
   const { email } = req.body;
   console.log("request received from frontend");
-  try{
-  const queryUserId = await db.query(`SELECT user_id FROM users WHERE email = ?`, [email]);
-  if(!queryUserId){
-    return res.status(404).json({ error: 'User not found' });
-  }
-  const loanRows = await db.query(
-    'SELECT * FROM UserLoan WHERE lenderId != ?',
-    [queryUserId]
-  );
+  try {
+    const queryUserId = await db.query(
+      `SELECT user_id FROM users WHERE email = ?`,
+      [email]
+    );
+    if (!queryUserId) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const loanRows = await db.query(
+      "SELECT * FROM UserLoan WHERE lenderId != ?",
+      [queryUserId]
+    );
 
-  const buckets = Array.from({ length: 10 }, () => []);
+    const buckets = Array.from({ length: 10 }, () => []);
 
-    loanRows.forEach(loan => {
+    loanRows.forEach((loan) => {
       const index = Math.floor(loan.amount / 10000) - 1;
       if (index >= 0 && index < 10) {
         buckets[index].push({
@@ -438,8 +468,8 @@ app.post("/borrower", async (req, res) => {
           lenderDetails: {
             name: loan.lenderName,
             email: loan.lenderEmail,
-            phone: loan.lenderPhone
-          }
+            phone: loan.lenderPhone,
+          },
         });
       }
     });
@@ -453,22 +483,24 @@ app.post("/borrower", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
-
 });
-
 
 app.get("/", (req, res) => {
   res.send("CREDISYNC Backend Running!");
 });
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Import Routes
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
 const adminRoutes = require("./routes/adminRoutes");
 app.use("/api", adminRoutes);
+
+
+const walletRoutes = require("./routes/walletRoutes");
+app.use("/api", walletRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -21,6 +21,7 @@ import UserLoanBorrower from "./components/UserLoanBorrower";
 import UserProfile from "./components/UserProfile";
 import AdminProfile from "./components/AdminProfile";
 import { useEffect } from "react";
+import UserWallet from "./components/UserWallet";
 
 function App() {
   const [isLogin, setIsLogin] = useState(() => {
@@ -80,8 +81,9 @@ function InnerApp({
           path="/user/signup"
           element={<UserSignupForm setUserType={setUserType} />}
         />
-        <Route path="/user/messages" element={<Verification />} />
+        {/* <Route path="/user/messages" element={<Verification />} /> */}
         <Route path="/user/profile" element={<UserProfile />} />
+        {/* <Route path="/user/wallet" element={<UserWallet />} /> */}
 
         {/* Company Routes */}
         <Route path="/company/signup" element={<CompanySignupForm />} />

@@ -3,6 +3,7 @@ import "./Navbar.css"; // Import your custom CSS file
 import AdminNotifications from "./AdminNotifications";
 import Verification from "./Verification";
 import { useNavigate } from "react-router-dom";
+import UserWallet from "./UserWallet";
 
 // Import Font Awesome Icons
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -16,6 +17,8 @@ import {
   faLock,
   faQuestionCircle,
   faBuilding,
+  faWallet,
+
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -29,11 +32,13 @@ library.add(
   faEnvelope,
   faLock,
   faQuestionCircle,
-  faBuilding
+  faBuilding,
+  faWallet
 );
 
 const CommonNavbar = ({ role, setExpanded, expanded }) => {
   const [popupOpen, setPopupOpen] = useState(false);
+  const [walletPopupOpen, setWalletPopupOpen] = useState(false);
   const navigate = useNavigate();
 
   // Define navigation items for user and admin
@@ -44,7 +49,8 @@ const CommonNavbar = ({ role, setExpanded, expanded }) => {
     { icon: "fa-solid fa-envelope", text: "Borrowers", onClick: () => navigate("/user/borrower") },
     { icon: "fa-solid fa-envelope", text: "Lenders", onClick: () => navigate("/user/lender") },
     { icon: "fa-solid fa-envelope", text: "Get Verified", onClick: () => setPopupOpen(true) },
-    { icon: "fa-solid fa-question-circle", text: "Help", onClick: () => navigate("/user/help") },
+    // { icon: "fa-solid fa-question-circle", text: "Help", onClick: () => navigate("/user/help") },
+    { icon: "fa-solid fa-wallet", text: "My Wallet", onClick: () => setWalletPopupOpen(true)},
   ];
 
   const adminNavItems = [
@@ -114,6 +120,7 @@ const CommonNavbar = ({ role, setExpanded, expanded }) => {
         role == "user" && <Verification isOpen={popupOpen} onClose={() => setPopupOpen(false)} />
       )} */}
       {role == "user" && <Verification isOpen={popupOpen} onClose={() => setPopupOpen(false)} />}
+      {role == "user" && <UserWallet isOpen={walletPopupOpen} onClose={() => setWalletPopupOpen(false)} />}
     </div>
   );
 };
