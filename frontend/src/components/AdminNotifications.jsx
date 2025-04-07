@@ -21,7 +21,7 @@ import {
 
 const AdminNotifications = ({ expanded }) => {
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [pendingCompanies, setPendingCompanies] = useState([]);
+  // const [pendingCompanies, setPendingCompanies] = useState([]);
   const [verificationHistory, setVerificationHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("users");
   const [selectedItem, setSelectedItem] = useState(null);
@@ -37,7 +37,7 @@ const AdminNotifications = ({ expanded }) => {
   const fetchData = () => {
     setIsLoading(true);
     fetchPendingUsers();
-    fetchPendingCompanies();
+    // fetchPendingCompanies();
 
     if (activeTab === "history") {
       fetchVerificationHistory();
@@ -68,28 +68,28 @@ const AdminNotifications = ({ expanded }) => {
     }
   };
 
-  const fetchPendingCompanies = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:5001/api/admin/pending-companies",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+  // const fetchPendingCompanies = async () => {
+  //   try {
+  //     const response = await fetch(
+  //       "http://localhost:5001/api/admin/pending-companies",
+  //       {
+  //         method: "GET",
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+  //         },
+  //       }
+  //     );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch pending companies");
-      }
+  //     if (!response.ok) {
+  //       throw new Error("Failed to fetch pending companies");
+  //     }
 
-      const data = await response.json();
-      setPendingCompanies(data);
-    } catch (error) {
-      console.error("Error fetching pending companies:", error);
-    }
-  };
+  //     const data = await response.json();
+  //     setPendingCompanies(data);
+  //   } catch (error) {
+  //     console.error("Error fetching pending companies:", error);
+  //   }
+  // };
 
   const fetchVerificationHistory = async () => {
     try {
@@ -137,13 +137,13 @@ const AdminNotifications = ({ expanded }) => {
         throw new Error("Failed to update status");
       }
 
-      if (type === "user") {
+      // if (type === "user") {
         setPendingUsers((prev) => prev.filter((user) => user.id !== id));
-      } else {
-        setPendingCompanies((prev) =>
-          prev.filter((company) => company.id !== id)
-        );
-      }
+      // } else {
+      //   setPendingCompanies((prev) =>
+      //     prev.filter((company) => company.id !== id)
+      //   );
+      // }
 
       // Reset detail view if the current item was acted upon
       if (selectedItem && selectedItem.id === id) {
@@ -566,42 +566,42 @@ const AdminNotifications = ({ expanded }) => {
       );
     }
 
-    if (activeTab === "companies") {
-      return (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              Pending Company Verifications
-            </h3>
-            <button
-              onClick={fetchData}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+    // if (activeTab === "companies") {
+    //   return (
+    //     <div>
+    //       <div className="flex justify-between items-center mb-4">
+    //         <h3 className="text-lg font-medium text-gray-900">
+    //           Pending Company Verifications
+    //         </h3>
+    //         <button
+    //           onClick={fetchData}
+    //           className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+    //           disabled={isLoading}
+    //         >
+    //           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+    //           Refresh
+    //         </button>
+    //       </div>
           
-          {pendingCompanies.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
-              <AlertCircle className="mx-auto w-10 h-10 text-gray-400 mb-2" />
-              <p className="text-gray-600 font-medium">
-                No pending company verifications
-              </p>
-            </div>
-          ) : (
-            pendingCompanies.map((company) => (
-              <NotificationCard
-                key={company.id}
-                item={company}
-                type="company"
-              />
-            ))
-          )}
-        </div>
-      );
-    }
+    //       {pendingCompanies.length === 0 ? (
+    //         <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
+    //           <AlertCircle className="mx-auto w-10 h-10 text-gray-400 mb-2" />
+    //           <p className="text-gray-600 font-medium">
+    //             No pending company verifications
+    //           </p>
+    //         </div>
+    //       ) : (
+    //         pendingCompanies.map((company) => (
+    //           <NotificationCard
+    //             key={company.id}
+    //             item={company}
+    //             type="company"
+    //           />
+    //         ))
+    //       )}
+    //     </div>
+    //   );
+    // }
 
     if (activeTab === "history") {
       const filteredHistory = filterHistoryItems();
@@ -667,7 +667,7 @@ const AdminNotifications = ({ expanded }) => {
 
   return (
     <div
-      className={`bg-white p-6 md:p-10 rounded-lg shadow-sm border border-gray-200 ${
+      className={`bg-green-50 p-6 md:p-10 min-h-screen rounded-lg shadow-sm border border-gray-200 ${
         expanded ? "ml-[18%]" : "ml-24"
       } transition-all`}
     >
@@ -681,10 +681,10 @@ const AdminNotifications = ({ expanded }) => {
             <Users className="w-3 h-3 mr-1" />
             {pendingUsers.length} Pending Users
           </span>
-          <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+          {/* <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
             <Building2 className="w-3 h-3 mr-1" />
             {pendingCompanies.length} Pending Companies
-          </span>
+          </span> */}
         </div>
       </div>
 
@@ -705,7 +705,7 @@ const AdminNotifications = ({ expanded }) => {
             <Users className="w-4 h-4" />
             Users
           </button>
-          <button
+          {/* <button
             className={`py-2 px-4 flex items-center gap-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeTab === "companies"
                 ? "border-emerald-500 text-emerald-600"
@@ -719,7 +719,7 @@ const AdminNotifications = ({ expanded }) => {
           >
             <Building2 className="w-4 h-4" />
             Companies
-          </button>
+          </button> */}
           <button
             className={`py-2 px-4 flex items-center gap-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeTab === "history"

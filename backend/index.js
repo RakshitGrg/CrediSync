@@ -434,49 +434,65 @@ app.post("/matchloans", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 app.post("/borrower", async (req, res) => {
   const { email } = req.body;
   console.log("request received from frontend");
   
   try {
     // Get user ID
-    const queryUserId = await db.query(`SELECT user_id FROM users WHERE email = ?`, [email]);
-    
-    if(!queryUserId || queryUserId.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    const userId = queryUserId[0].user_id;
-    
-    // Get all loans where the user is not the lender
-    const loans = await db.query(
-      'SELECT * FROM UserLoan WHERE lenderId != ?',
-      [userId]
-    );
-
-    // Format the loan data
-    const formattedLoans = loans.map(loan => ({
-      loanId: loan.loanId,
-      lenderId: loan.lenderId,
-      borrowerId: loan.borrowerId,
-      amount: loan.amount,
-      employment: loan.employment,
-      interestRate: loan.interestRate,
-      startDate: loan.startDate,
-      duration: loan.duration,
-      lenderDetails: {
-        name: loan.lenderName,
-        email: loan.lenderEmail,
-        phone: loan.lenderPhone
+    const getUserIdQuery = "SELECT user_id FROM users WHERE email = ?";
+    db.query(getUserIdQuery, [email], (err, userResult) => {
+      if (err) {
+        console.error("Error fetching user ID:", err);
+        return res.status(500).json({ error: 'Database error' });
       }
-    }));
+      
+      if (userResult.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const userId = userResult[0].user_id;
+      
+      // Get all loans where user is not the lender and include lender details using JOIN
+      const loansQuery = `
+        SELECT l.*, 
+               u.full_name AS lenderName, 
+               u.email AS lenderEmail, 
+               u.phone AS lenderPhone
+        FROM UserLoan l
+        JOIN users u ON l.lenderId = u.user_id
+        WHERE l.borrowerId IS NULL AND l.lenderId != ?
+      `;
+      
+      db.query(loansQuery, [userId], (err, loans) => {
+        if (err) {
+          console.error("Error fetching loans:", err);
+          return res.status(500).json({ error: 'Database error' });
+        }
 
-    console.log('Returning loans:', formattedLoans);
-    res.json({ loans: formattedLoans });
-    
+        // Format the loan data
+        const formattedLoans = loans.map(loan => ({
+          loanId: loan.loanId,
+          lenderId: loan.lenderId,
+          borrowerId: loan.borrowerId,
+          amount: loan.amount,
+          employment: loan.employment,
+          interestRate: loan.interestRate,
+          startDate: loan.startDate,
+          duration: loan.duration,
+          lenderDetails: {
+            name: loan.lenderName,
+            email: loan.lenderEmail,
+            phone: loan.lenderPhone
+          }
+        }));
+
+        console.log(`Found ${formattedLoans.length} loans for user`);
+        res.json({ loans: formattedLoans });
+      });
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Server error:", err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -495,6 +511,33 @@ app.use("/api", adminRoutes);
 
 const walletRoutes = require("./routes/walletRoutes");
 app.use("/api", walletRoutes);
+
+
+// Add this route to your adminRoutes.js or create a new userRoutes.js
+app.get("/api/user/verification-status", (req, res) => {
+  const { email } = req.query;
+
+  console.log("Received request for verification status:", email);
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+  
+  const query = "SELECT verification_status FROM users WHERE email = ?";
+  
+  db.query(query, [email], (err, results) => {
+    if (err) {
+      console.error("Error fetching verification status:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    if (results.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json({ status: results[0].verification_status });
+  });
+});
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

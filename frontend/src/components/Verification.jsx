@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Upload, X, FileText, CreditCard, CheckCircle } from "lucide-react";
+import { Upload, X, FileText, CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 
 const DocumentUploadPopup = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -10,6 +10,42 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
   const [bankStatement, setBankStatement] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState("none"); // Default to 'none'
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch user verification status when component mounts
+  useEffect(() => {
+    const checkVerificationStatus = async () => {
+      const userEmail = localStorage.getItem("email");
+      
+      try {
+        setIsLoading(true);
+        const response = await axios.get(`http://localhost:5001/api/user/verification-status?email=${userEmail}`);
+        setVerificationStatus(response.data.status);
+        setMessage(getStatusMessage(response.data.status));
+      } catch (error) {
+        console.error("Error fetching verification status:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkVerificationStatus();
+  }, []);
+
+  // Generate appropriate message based on verification status
+  const getStatusMessage = (status) => {
+    switch(status) {
+      case 'pending':
+        return "Your verification is pending approval. Please check back later.";
+      case 'approved':
+        return "You are already verified. No further action is needed.";
+      case 'rejected':
+        return "Your previous verification was rejected. Please submit new documents.";
+      default:
+        return "";
+    }
+  };
 
   const handleFileChange = (event, type) => {
     const file = event.target.files[0];
@@ -51,6 +87,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
         }
       );
       setMessage(response.data.message);
+      setVerificationStatus("pending"); // Update status after successful upload
     } catch (error) {
       setMessage("Upload failed. Try again.");
     } finally {
@@ -58,12 +95,23 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
     }
   };
 
-  // Define placeholder style as a regular CSS object
-  const placeholderStyle = {
-    "::placeholder": {
-      color: "#9ca3af"
-    }
-  };
+  // Check if form should be disabled
+  const isFormDisabled = verificationStatus === 'pending' || verificationStatus === 'approved';
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative bg-white rounded-2xl shadow-2xl p-8 flex items-center justify-center w-full max-w-3xl">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+            <p className="text-gray-700">Loading verification status...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -94,12 +142,26 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
             </h2>
           </div>
 
+          {/* Status Message */}
+          {isFormDisabled && (
+            <div className={`p-4 rounded-lg mb-6 ${verificationStatus === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+              <div className="flex items-center gap-2">
+                {verificationStatus === 'approved' ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5" />
+                )}
+                {getStatusMessage(verificationStatus)}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-6">
             {/* Aadhar Number */}
             <div>
               <label
                 htmlFor="aadhar-number"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+                className={`flex items-center gap-2 text-sm font-medium ${isFormDisabled ? 'text-gray-400' : 'text-gray-700'} mb-2`}
               >
                 <CreditCard className="w-4 h-4" />
                 Aadhar Number
@@ -109,8 +171,9 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
                 type="text"
                 value={aadharNumber}
                 onChange={handleAadharChange}
-                className="text-black w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 placeholder-gray-400"
+                className={`text-black w-full border ${isFormDisabled ? 'bg-gray-100 text-gray-500' : 'border-gray-200'} p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 placeholder-gray-400`}
                 placeholder="Enter your 12-digit Aadhar number"
+                disabled={isFormDisabled}
               />
             </div>
 
@@ -118,7 +181,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
             <div>
               <label
                 htmlFor="address-proof"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+                className={`flex items-center gap-2 text-sm font-medium ${isFormDisabled ? 'text-gray-400' : 'text-gray-700'} mb-2`}
               >
                 <FileText className="w-4 h-4" />
                 Address Proof
@@ -128,7 +191,8 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
                   id="address-proof"
                   type="file"
                   onChange={(e) => handleFileChange(e, "addressProof")}
-                  className="text-black w-full border border-gray-200 p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                  className={`text-black w-full border ${isFormDisabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-200'} p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium ${isFormDisabled ? 'file:bg-gray-200 file:text-gray-500' : 'file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100'} focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200`}
+                  disabled={isFormDisabled}
                 />
                 {addressProof && (
                   <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
@@ -140,7 +204,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
             <div>
               <label
                 htmlFor="bank-statement"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"
+                className={`flex items-center gap-2 text-sm font-medium ${isFormDisabled ? 'text-gray-400' : 'text-gray-700'} mb-2`}
               >
                 <FileText className="w-4 h-4" />
                 Bank Statement
@@ -150,7 +214,8 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
                   id="bank-statement"
                   type="file"
                   onChange={(e) => handleFileChange(e, "bankStatement")}
-                  className="text-black w-full border border-gray-200 p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                  className={`text-black w-full border ${isFormDisabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-200'} p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium ${isFormDisabled ? 'file:bg-gray-200 file:text-gray-500' : 'file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100'} focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200`}
+                  disabled={isFormDisabled}
                 />
                 {bankStatement && (
                   <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
@@ -159,7 +224,7 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
             </div>
 
             {/* Message */}
-            {message && (
+            {message && !isFormDisabled && (
               <div
                 className={`p-4 rounded-lg ${
                   message.includes("failed")
@@ -174,11 +239,11 @@ const DocumentUploadPopup = ({ isOpen, onClose }) => {
             {/* Upload Button */}
             <button
               onClick={handleUpload}
-              disabled={uploading}
-              className="w-full bg-[#3c8243] hover:bg-[#3c6f42] disabled:bg-emerald-300 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:shadow-none"
+              disabled={uploading || isFormDisabled}
+              className={`w-full ${isFormDisabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#3c8243] hover:bg-[#3c6f42]'} disabled:bg-gray-300 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${isFormDisabled ? '' : 'hover:shadow-xl'} disabled:shadow-none`}
             >
               <Upload className="w-5 h-5" />
-              {uploading ? "Uploading..." : "Upload Documents"}
+              {uploading ? "Uploading..." : isFormDisabled ? "Already Submitted" : "Upload Documents"}
             </button>
           </div>
         </div>

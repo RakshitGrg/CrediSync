@@ -60,6 +60,7 @@ const Borrower = ({ expanded }) => {
       console.log("All loans:", allLoans);
       
       setLoans(allLoans);
+      
     } catch (err) {
       setError(err.message);
     } finally {
@@ -381,20 +382,20 @@ const Borrower = ({ expanded }) => {
                         <span>{loan.lenderDetails?.name || 'Anonymous Lender'}</span>
                       </div>
                       
-                      {!isSelected && (
+                      {/* {!isSelected && ( */}
                         <button
-                          onClick={() => setSelectedLoan(loan.loanId)}
+                          onClick={() => handleViewLoanDetails(loan)}
                           className="mt-2 w-full bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 
                             transition-all duration-200 flex items-center justify-center"
                         >
                           View Details
                         </button>
-                      )}
+                      {/* )} */}
                     </div>
                     
-                    {isSelected && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="space-y-4">
+                    {/* {isSelected && (
+                      <div className="mt-4 pt-4 border-t border-gray-100"> */}
+                        {/* <div className="space-y-4">
                           <div className="bg-blue-50 rounded-lg p-4">
                             <h3 className="font-medium text-blue-800 mb-3">Loan Details</h3>
                             <div className="space-y-2">
@@ -438,9 +439,9 @@ const Borrower = ({ expanded }) => {
                               </p>
                             </div>
                           </div>
-                        </div>
+                        </div> */}
                         
-                        <div className="mt-4 flex justify-between">
+                        {/* <div className="mt-4 flex justify-between">
                           <button 
                             onClick={() => setSelectedLoan(null)}
                             className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 
@@ -457,7 +458,7 @@ const Borrower = ({ expanded }) => {
                           </button>
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </div>
               );

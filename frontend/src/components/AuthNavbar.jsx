@@ -36,7 +36,7 @@ const AuthNavbar = ({ isLogin, setIsLogin, userType, setUserType }) => (
         >
           Admin
         </button>
-        <button
+        {/* <button
           onClick={() => setUserType("company")}
           className={`px-6 py-2 rounded-full transition-all duration-300 ${
             userType === "company"
@@ -45,7 +45,7 @@ const AuthNavbar = ({ isLogin, setIsLogin, userType, setUserType }) => (
           }`}
         >
           Company
-        </button>
+        </button> */}
       </div>
 
       {/* Login/Signup Buttons */}
@@ -77,8 +77,8 @@ const AuthNavbar = ({ isLogin, setIsLogin, userType, setUserType }) => (
         (isLogin ? <UserLoginForm /> : <UserSignupForm />)}
       {userType === "admin" &&
         (isLogin ? <AdminLoginForm /> : <AdminSignupForm />)}
-      {userType === "company" &&
-        (isLogin ? <CompanyLoginForm /> : <CompanySignupForm />)}
+      {/* {userType === "company" &&
+        (isLogin ? <CompanyLoginForm /> : <CompanySignupForm />)} */}
     </div>
   </div>
 );

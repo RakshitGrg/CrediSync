@@ -354,3 +354,29 @@ label[for=nav-footer-toggle] {
   border-radius: 99px;
   /* background-color: #D62929; */
 }
+
+
+/* Verification status styling */
+.nav-button.verified {
+  color: #4caf50; /* Green for verified */
+}
+
+.nav-button.verified:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.nav-button.pending {
+  color: #ff9800; /* Orange for pending */
+}
+
+.nav-button.pending:hover {
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
+.nav-button.rejected {
+  color: #f44336; /* Red for rejected */
+}
+
+.nav-button.rejected:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
