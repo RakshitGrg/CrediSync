@@ -130,7 +130,7 @@ const CommonNavbar = ({ role, setExpanded }) => {
   // Complete the user nav items
   userNavItems.push(
     { icon: "fa-solid fa-wallet", text: "My Wallet", onClick: () => setWalletPopupOpen(true) },
-    { icon: "fa-solid fa-circle-question", text: "Help", onClick: () => navigate("/user/help") }
+    // { icon: "fa-solid fa-circle-question", text: "Help", onClick: () => navigate("/user/help") }
   );
 
   const adminNavItems = [

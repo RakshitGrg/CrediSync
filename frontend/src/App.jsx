@@ -22,6 +22,7 @@ import UserProfile from "./components/UserProfile";
 import AdminProfile from "./components/AdminProfile";
 import { useEffect } from "react";
 import UserWallet from "./components/UserWallet";
+import LoanApplicationsManagement from "./components/LoanApplicationsManagement";
 
 function App() {
   const [isLogin, setIsLogin] = useState(() => {
@@ -85,9 +86,6 @@ function InnerApp({
         <Route path="/user/profile" element={<UserProfile expanded={expanded}/>} />
         {/* <Route path="/user/wallet" element={<UserWallet />} /> */}
 
-        {/* Company Routes */}
-        <Route path="/company/signup" element={<CompanySignupForm />} />
-        <Route path="/company/login" element={<CompanyLoginForm />} />
 
         {/* Admin Routes */}
         <Route
@@ -110,6 +108,11 @@ function InnerApp({
           element={<Borrower expanded={expanded} />}
         />
         <Route path="/user/lender" element={<UserLoan />} />
+
+        <Route
+          path="/user/activity-log"
+          element={<LoanApplicationsManagement expanded={expanded} />}
+        />
 
         {/* Default Route */}
         <Route

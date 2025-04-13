@@ -116,6 +116,23 @@ INSERT IGNORE INTO admin_assignments (assignment_type)
 VALUES ('user'), ('company');
 `;
 
+ const loan_applications = `
+ CREATE TABLE IF NOT EXISTS loan_applications (
+  application_id INT AUTO_INCREMENT PRIMARY KEY,
+  loan_id INT NOT NULL,
+  borrower_id INT NOT NULL,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  application_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  monthly_income DECIMAL(10,2) NOT NULL,
+  employment_status VARCHAR(50) NOT NULL,
+  reason_for_loan TEXT,
+  FOREIGN KEY (loan_id) REFERENCES UserLoan(loanId) ON DELETE CASCADE,
+  FOREIGN KEY (borrower_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+`;
+  // Create the tables if they do not exist
+
+
   // Execute the queries
   db.query(createAdminsTable, (err) => {
     if (err) throw err;
@@ -157,6 +174,12 @@ VALUES ('user'), ('company');
   db.query(wallet_transactions, (err) => {
     if (err) throw err;
     console.log("Wallet transactions table created or already exists");
+  }
+  );
+
+  db.query(loan_applications, (err) => {
+    if (err) throw err;
+    console.log("Loan applications table created or already exists");
   }
   );
 };
@@ -369,47 +392,47 @@ app.post(
   }
 );
 
-app.post("/createLoan", (req, res) => {
-  console.log("received data from frontend");
-  const { amount, interestRate, term, employment, email } = req.body;
-  const startDate = new Date().toISOString().split("T")[0];
+// app.post("/createLoan", (req, res) => {
+//   console.log("received data from frontend");
+//   const { amount, interestRate, term, employment, email } = req.body;
+//   const startDate = new Date().toISOString().split("T")[0];
 
-  db.query(
-    "SELECT user_id FROM users WHERE email = ?",
-    [email],
-    (err, results) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ error: "Database error", details: err });
-      }
-      if (results.length === 0) {
-        return res.status(404).json({ error: "Lender not found" });
-      }
+//   db.query(
+//     "SELECT user_id FROM users WHERE email = ?",
+//     [email],
+//     (err, results) => {
+//       if (err) {
+//         console.error("Database error:", err);
+//         return res.status(500).json({ error: "Database error", details: err });
+//       }
+//       if (results.length === 0) {
+//         return res.status(404).json({ error: "Lender not found" });
+//       }
 
-      const lenderId = results[0].user_id;
+//       const lenderId = results[0].user_id;
 
-      db.query(
-        "INSERT INTO UserLoan (lenderId, borrowerId, amount, employment, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?, ?)",
-        [lenderId, amount, employment, interestRate, startDate, term],
-        (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            console.log(err);
-            return res
-              .status(500)
-              .json({ error: "Database error", details: err });
-          }
-          res
-            .status(201)
-            .json({
-              message: "Loan created successfully",
-              loanId: result.insertId,
-            });
-        }
-      );
-    }
-  );
-});
+//       db.query(
+//         "INSERT INTO UserLoan (lenderId, borrowerId, amount, employment, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?, ?)",
+//         [lenderId, amount, employment, interestRate, startDate, term],
+//         (err, result) => {
+//           if (err) {
+//             console.error("Database error:", err);
+//             console.log(err);
+//             return res
+//               .status(500)
+//               .json({ error: "Database error", details: err });
+//           }
+//           res
+//             .status(201)
+//             .json({
+//               message: "Loan created successfully",
+//               loanId: result.insertId,
+//             });
+//         }
+//       );
+//     }
+//   );
+// });
 app.post("/matchloans", async (req, res) => {
   const { amount, term, employment, income } = req.body;
 
@@ -536,6 +559,636 @@ app.get("/api/user/verification-status", (req, res) => {
     }
     
     res.json({ status: results[0].verification_status });
+  });
+});
+
+
+
+
+
+
+
+// Add these routes to your Express app
+
+// Endpoint for borrowers to apply for a loan
+app.post("/api/loans/apply", (req, res) => {
+  const { loanId, email, monthlyIncome, employmentStatus, reasonForLoan } = req.body;
+  
+  console.log("Loan application received:", { loanId, email, monthlyIncome });
+  
+  if (!loanId || !email || !monthlyIncome || !employmentStatus) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  
+  // Get borrower ID from email
+  const getUserQuery = "SELECT user_id FROM users WHERE email = ?";
+  db.query(getUserQuery, [email], (err, userResults) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const borrowerId = userResults[0].user_id;
+    
+    // Check if user already applied for this loan
+    const checkExistingQuery = "SELECT * FROM loan_applications WHERE loan_id = ? AND borrower_id = ?";
+    db.query(checkExistingQuery, [loanId, borrowerId], (err, existingResults) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      
+      if (existingResults.length > 0) {
+        return res.status(400).json({ error: "You have already applied for this loan" });
+      }
+      
+      // Insert application
+      const insertQuery = `
+        INSERT INTO loan_applications 
+        (loan_id, borrower_id, monthly_income, employment_status, reason_for_loan) 
+        VALUES (?, ?, ?, ?, ?)
+      `;
+      
+      db.query(
+        insertQuery, 
+        [loanId, borrowerId, monthlyIncome, employmentStatus, reasonForLoan || null],
+        (err, result) => {
+          if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database error" });
+          }
+          
+          res.status(201).json({ 
+            message: "Loan application submitted successfully", 
+            applicationId: result.insertId 
+          });
+        }
+      );
+    });
+  });
+});
+
+// Endpoint for lenders to get applications for their loans
+app.get("/api/loans/applications", (req, res) => {
+  const { email } = req.query;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+  
+  // Get lender ID from email
+  const getLenderQuery = "SELECT user_id FROM users WHERE email = ?";
+  db.query(getLenderQuery, [email], (err, lenderResults) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    if (lenderResults.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const lenderId = lenderResults[0].user_id;
+    
+    // Get all loans by this lender that have pending applications
+    const getApplicationsQuery = `
+      SELECT 
+        la.application_id,
+        la.loan_id,
+        la.borrower_id,
+        la.status,
+        la.application_date,
+        la.monthly_income,
+        la.employment_status,
+        la.reason_for_loan,
+        ul.amount,
+        ul.interestRate,
+        ul.duration,
+        u.full_name AS borrower_name,
+        u.email AS borrower_email,
+        u.phone AS borrower_phone,
+        u.verification_status AS borrower_verification
+      FROM loan_applications la
+      JOIN UserLoan ul ON la.loan_id = ul.loanId
+      JOIN users u ON la.borrower_id = u.user_id
+      WHERE ul.lenderId = ? AND la.status = 'pending' AND ul.borrowerId IS NULL
+    `;
+    
+    db.query(getApplicationsQuery, [lenderId], (err, applications) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      
+      res.json({ applications });
+    });
+  });
+});
+
+// Endpoint for lenders to approve a loan application
+// app.post("/api/loans/applications/approve", (req, res) => {
+//   const { applicationId, lenderEmail } = req.body;
+  
+//   if (!applicationId || !lenderEmail) {
+//     return res.status(400).json({ error: "Missing required fields" });
+//   }
+  
+//   // Start a transaction
+//   db.beginTransaction(err => {
+//     if (err) {
+//       console.error("Transaction error:", err);
+//       return res.status(500).json({ error: "Database error" });
+//     }
+    
+//     // Get application details
+//     const getApplicationQuery = `
+//       SELECT la.*, ul.lenderId 
+//       FROM loan_applications la 
+//       JOIN UserLoan ul ON la.loan_id = ul.loanId 
+//       WHERE la.application_id = ?
+//     `;
+    
+//     db.query(getApplicationQuery, [applicationId], (err, applications) => {
+//       if (err) {
+//         return db.rollback(() => {
+//           console.error("Database error:", err);
+//           res.status(500).json({ error: "Database error" });
+//         });
+//       }
+      
+//       if (applications.length === 0) {
+//         return db.rollback(() => {
+//           res.status(404).json({ error: "Application not found" });
+//         });
+//       }
+      
+//       const application = applications[0];
+      
+//       // Get lender ID from email
+//       const getLenderQuery = "SELECT user_id FROM users WHERE email = ?";
+//       db.query(getLenderQuery, [lenderEmail], (err, lenders) => {
+//         if (err) {
+//           return db.rollback(() => {
+//             console.error("Database error:", err);
+//             res.status(500).json({ error: "Database error" });
+//           });
+//         }
+        
+//         if (lenders.length === 0) {
+//           return db.rollback(() => {
+//             res.status(404).json({ error: "Lender not found" });
+//           });
+//         }
+        
+//         const lenderId = lenders[0].user_id;
+        
+//         // Verify this lender owns the loan
+//         if (application.lenderId !== lenderId) {
+//           return db.rollback(() => {
+//             res.status(403).json({ error: "You don't own this loan" });
+//           });
+//         }
+        
+//         // Update application status
+//         const updateApplicationQuery = "UPDATE loan_applications SET status = 'approved' WHERE application_id = ?";
+//         db.query(updateApplicationQuery, [applicationId], (err) => {
+//           if (err) {
+//             return db.rollback(() => {
+//               console.error("Database error:", err);
+//               res.status(500).json({ error: "Database error" });
+//             });
+//           }
+          
+//           // Update loan with borrower ID
+//           const updateLoanQuery = "UPDATE UserLoan SET borrowerId = ? WHERE loanId = ?";
+//           db.query(updateLoanQuery, [application.borrower_id, application.loan_id], (err) => {
+//             if (err) {
+//               return db.rollback(() => {
+//                 console.error("Database error:", err);
+//                 res.status(500).json({ error: "Database error" });
+//               });
+//             }
+            
+//             // Reject all other applications for this loan
+//             const rejectOtherApplicationsQuery = `
+//               UPDATE loan_applications 
+//               SET status = 'rejected' 
+//               WHERE loan_id = ? AND application_id != ?
+//             `;
+            
+//             db.query(rejectOtherApplicationsQuery, [application.loan_id, applicationId], (err) => {
+//               if (err) {
+//                 return db.rollback(() => {
+//                   console.error("Database error:", err);
+//                   res.status(500).json({ error: "Database error" });
+//                 });
+//               }
+              
+//               // Commit the transaction
+//               db.commit(err => {
+//                 if (err) {
+//                   return db.rollback(() => {
+//                     console.error("Commit error:", err);
+//                     res.status(500).json({ error: "Database error" });
+//                   });
+//                 }
+                
+//                 res.json({ 
+//                   message: "Loan application approved successfully",
+//                   applicationId: applicationId,
+//                   loanId: application.loan_id,
+//                   borrowerId: application.borrower_id
+//                 });
+//               });
+//             });
+//           });
+//         });
+//       });
+//     });
+//   });
+// });
+
+// Endpoint for lenders to reject a loan application
+app.post("/api/loans/applications/reject", (req, res) => {
+  const { applicationId, lenderEmail } = req.body;
+  
+  if (!applicationId || !lenderEmail) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  
+  // Get lender ID from email
+  const getLenderQuery = "SELECT user_id FROM users WHERE email = ?";
+  db.query(getLenderQuery, [lenderEmail], (err, lenders) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    if (lenders.length === 0) {
+      return res.status(404).json({ error: "Lender not found" });
+    }
+    
+    const lenderId = lenders[0].user_id;
+    
+    // Verify lender owns the loan for this application
+    const verifyOwnershipQuery = `
+      SELECT ul.lenderId 
+      FROM loan_applications la 
+      JOIN UserLoan ul ON la.loan_id = ul.loanId 
+      WHERE la.application_id = ?
+    `;
+    
+    db.query(verifyOwnershipQuery, [applicationId], (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+      
+      if (results[0].lenderId !== lenderId) {
+        return res.status(403).json({ error: "You don't own this loan" });
+      }
+      
+      // Update application status
+      const updateApplicationQuery = "UPDATE loan_applications SET status = 'rejected' WHERE application_id = ?";
+      db.query(updateApplicationQuery, [applicationId], (err) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ error: "Database error" });
+        }
+        
+        res.json({ 
+          message: "Loan application rejected successfully",
+          applicationId: applicationId
+        });
+      });
+    });
+  });
+});
+
+// Endpoint for borrowers to check their loan application status
+app.get("/api/loans/my-applications", (req, res) => {
+  const { email } = req.query;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+  
+  // Get borrower ID from email
+  const getBorrowerQuery = "SELECT user_id FROM users WHERE email = ?";
+  db.query(getBorrowerQuery, [email], (err, borrowers) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    if (borrowers.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const borrowerId = borrowers[0].user_id;
+    
+    // Get all applications by this borrower
+    const getApplicationsQuery = `
+      SELECT 
+        la.application_id,
+        la.loan_id,
+        la.status,
+        la.application_date,
+        ul.amount,
+        ul.interestRate,
+        ul.duration,
+        u.full_name AS lender_name,
+        u.email AS lender_email
+      FROM loan_applications la
+      JOIN UserLoan ul ON la.loan_id = ul.loanId
+      JOIN users u ON ul.lenderId = u.user_id
+      WHERE la.borrower_id = ?
+      ORDER BY la.application_date DESC
+    `;
+    
+    db.query(getApplicationsQuery, [borrowerId], (err, applications) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      
+      res.json({ applications });
+    });
+  });
+});
+
+
+
+// Modify the createLoan endpoint to check wallet balance first
+app.post("/createLoan", (req, res) => {
+  console.log("received data from frontend");
+  const { amount, interestRate, term, employment, email } = req.body;
+  const startDate = new Date().toISOString().split("T")[0];
+
+  // Check user exists and get their ID
+  db.query(
+    "SELECT user_id, wallet_balance FROM users WHERE email = ?",
+    [email],
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error", details: err });
+      }
+      
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+
+      const lenderId = results[0].user_id;
+      const walletBalance = results[0].wallet_balance;
+      
+      // Check if user has sufficient balance
+      if (walletBalance < amount) {
+        return res.status(400).json({ 
+          error: "Insufficient wallet balance", 
+          currentBalance: walletBalance,
+          requiredAmount: amount 
+        });
+      }
+
+      // Reserve the funds by creating the loan
+      db.query(
+        "INSERT INTO UserLoan (lenderId, borrowerId, amount, employment, interestRate, startDate, duration) VALUES (?, NULL, ?, ?, ?, ?, ?)",
+        [lenderId, amount, employment, interestRate, startDate, term],
+        (err, result) => {
+          if (err) {
+            console.error("Database error:", err);
+            console.log(err);
+            return res
+              .status(500)
+              .json({ error: "Database error", details: err });
+          }
+          
+          // Success - funds are now reserved in the system
+          res
+            .status(201)
+            .json({
+              message: "Loan created successfully. Funds reserved from your wallet.",
+              loanId: result.insertId,
+            });
+        }
+      );
+    }
+  );
+});
+
+// Modify the loan approval endpoint to handle fund transfer
+app.post("/api/loans/applications/approve", (req, res) => {
+  const { applicationId, lenderEmail } = req.body;
+  
+  if (!applicationId || !lenderEmail) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  
+  // Start a transaction
+  db.beginTransaction(err => {
+    if (err) {
+      console.error("Transaction error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    // Get application details
+    const getApplicationQuery = `
+      SELECT la.*, ul.lenderId, ul.amount 
+      FROM loan_applications la 
+      JOIN UserLoan ul ON la.loan_id = ul.loanId 
+      WHERE la.application_id = ?
+    `;
+    
+    db.query(getApplicationQuery, [applicationId], (err, applications) => {
+      if (err) {
+        return db.rollback(() => {
+          console.error("Database error:", err);
+          res.status(500).json({ error: "Database error" });
+        });
+      }
+      
+      if (applications.length === 0) {
+        return db.rollback(() => {
+          res.status(404).json({ error: "Application not found" });
+        });
+      }
+      
+      const application = applications[0];
+      const loanAmount = application.amount;
+      
+      // Get lender ID from email
+      const getLenderQuery = "SELECT user_id, wallet_balance FROM users WHERE email = ?";
+      db.query(getLenderQuery, [lenderEmail], (err, lenders) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error("Database error:", err);
+            res.status(500).json({ error: "Database error" });
+          });
+        }
+        
+        if (lenders.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({ error: "Lender not found" });
+          });
+        }
+        
+        const lenderId = lenders[0].user_id;
+        const lenderBalance = lenders[0].wallet_balance;
+        
+        // Verify this lender owns the loan
+        if (application.lenderId !== lenderId) {
+          return db.rollback(() => {
+            res.status(403).json({ error: "You don't own this loan" });
+          });
+        }
+        
+        // Double-check the lender still has sufficient funds
+        if (lenderBalance < loanAmount) {
+          return db.rollback(() => {
+            res.status(400).json({ 
+              error: "Insufficient funds in your wallet", 
+              currentBalance: lenderBalance,
+              requiredAmount: loanAmount
+            });
+          });
+        }
+        
+        // Update application status
+        const updateApplicationQuery = "UPDATE loan_applications SET status = 'approved' WHERE application_id = ?";
+        db.query(updateApplicationQuery, [applicationId], (err) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error("Database error:", err);
+              res.status(500).json({ error: "Database error" });
+            });
+          }
+          
+          // Update loan with borrower ID
+          const updateLoanQuery = "UPDATE UserLoan SET borrowerId = ? WHERE loanId = ?";
+          db.query(updateLoanQuery, [application.borrower_id, application.loan_id], (err) => {
+            if (err) {
+              return db.rollback(() => {
+                console.error("Database error:", err);
+                res.status(500).json({ error: "Database error" });
+              });
+            }
+            
+            // Deduct amount from lender's wallet
+            const deductFromLenderQuery = "UPDATE users SET wallet_balance = wallet_balance - ? WHERE user_id = ?";
+            db.query(deductFromLenderQuery, [loanAmount, lenderId], (err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error("Database error:", err);
+                  res.status(500).json({ error: "Database error" });
+                });
+              }
+              
+              // Add amount to borrower's wallet
+              const addToBorrowerQuery = "UPDATE users SET wallet_balance = wallet_balance + ? WHERE user_id = ?";
+              db.query(addToBorrowerQuery, [loanAmount, application.borrower_id], (err) => {
+                if (err) {
+                  return db.rollback(() => {
+                    console.error("Database error:", err);
+                    res.status(500).json({ error: "Database error" });
+                  });
+                }
+                
+                // Record the transaction in wallet_transactions for lender
+                const lenderTransactionQuery = `
+                  INSERT INTO wallet_transactions 
+                  (user_id, amount, transaction_type, description) 
+                  VALUES (?, ?, 'transfer', ?)
+                `;
+                
+                db.query(
+                  lenderTransactionQuery, 
+                  [
+                    lenderId, 
+                    -loanAmount, 
+                    `Loan transfer to borrower (Loan ID: ${application.loan_id})`
+                  ], 
+                  (err) => {
+                    if (err) {
+                      return db.rollback(() => {
+                        console.error("Database error:", err);
+                        res.status(500).json({ error: "Database error" });
+                      });
+                    }
+                    
+                    // Record the transaction in wallet_transactions for borrower
+                    const borrowerTransactionQuery = `
+                      INSERT INTO wallet_transactions 
+                      (user_id, amount, transaction_type, description) 
+                      VALUES (?, ?, 'transfer', ?)
+                    `;
+                    
+                    db.query(
+                      borrowerTransactionQuery, 
+                      [
+                        application.borrower_id, 
+                        loanAmount, 
+                        `Loan received from lender (Loan ID: ${application.loan_id})`
+                      ], 
+                      (err) => {
+                        if (err) {
+                          return db.rollback(() => {
+                            console.error("Database error:", err);
+                            res.status(500).json({ error: "Database error" });
+                          });
+                        }
+                        
+                        // Reject all other applications for this loan
+                        const rejectOtherApplicationsQuery = `
+                          UPDATE loan_applications 
+                          SET status = 'rejected' 
+                          WHERE loan_id = ? AND application_id != ?
+                        `;
+                        
+                        db.query(rejectOtherApplicationsQuery, [application.loan_id, applicationId], (err) => {
+                          if (err) {
+                            return db.rollback(() => {
+                              console.error("Database error:", err);
+                              res.status(500).json({ error: "Database error" });
+                            });
+                          }
+                          
+                          // Commit the transaction
+                          db.commit(err => {
+                            if (err) {
+                              return db.rollback(() => {
+                                console.error("Commit error:", err);
+                                res.status(500).json({ error: "Database error" });
+                              });
+                            }
+                            
+                            res.json({ 
+                              message: "Loan application approved successfully. Funds transferred to borrower.",
+                              applicationId: applicationId,
+                              loanId: application.loan_id,
+                              borrowerId: application.borrower_id,
+                              amountTransferred: loanAmount
+                            });
+                          });
+                        });
+                      }
+                    );
+                  }
+                );
+              });
+            });
+          });
+        });
+      });
+    });
   });
 });
 
