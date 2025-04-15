@@ -119,7 +119,7 @@ const UserWallet = ({ isOpen, onClose }) => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(value);
   };
 
@@ -187,7 +187,7 @@ const UserWallet = ({ isOpen, onClose }) => {
           <div className="flex space-x-2">
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                $
+              ₹
               </span>
               <input
                 type="number"
@@ -245,7 +245,7 @@ const UserWallet = ({ isOpen, onClose }) => {
                 onClick={() => setAmount(quickAmount)}
                 className="px-4 py-2 bg-white text-green-700 border border-green-200 rounded-lg hover:bg-green-50 transition-colors"
               >
-                ${quickAmount.toLocaleString()}
+                ₹{quickAmount.toLocaleString()}
               </button>
             ))}
           </div>

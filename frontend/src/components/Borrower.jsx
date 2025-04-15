@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Calendar, Briefcase, User, Phone, Mail, Filter, Check, AlertCircle, Search, ChevronDown } from 'lucide-react';
+import { Calendar, Briefcase, User, Phone, Mail, Filter, Check, AlertCircle, Search, ChevronDown, IndianRupeeIcon } from 'lucide-react';
 import LoanDetails from './LoanDetails';
 
 const Borrower = ({ expanded }) => {
@@ -71,7 +71,7 @@ const Borrower = ({ expanded }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(amount);
   };
@@ -323,7 +323,7 @@ const Borrower = ({ expanded }) => {
         {sortedLoans.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-10 text-center">
             <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <DollarSign className="w-10 h-10 text-green-600" />
+              <IndianRupeeIcon className="w-10 h-10 text-green-600" />
             </div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">No Loans Available</h2>
             <p className="text-gray-600 max-w-md mx-auto">
@@ -348,7 +348,7 @@ const Borrower = ({ expanded }) => {
                   <div className="bg-green-600 px-5 py-4">
                     <div className="flex justify-between items-center">
                       <h2 className="text-xl font-semibold text-white flex items-center">
-                        <DollarSign className="w-5 h-5 mr-2" />
+                        <IndianRupeeIcon className="w-5 h-5 mr-2" />
                         {formatCurrency(loan.amount)}
                       </h2>
                       <span className="bg-green-800 text-green-100 text-xs font-semibold px-3 py-1 rounded-full">
@@ -392,73 +392,6 @@ const Borrower = ({ expanded }) => {
                         </button>
                       {/* )} */}
                     </div>
-                    
-                    {/* {isSelected && (
-                      <div className="mt-4 pt-4 border-t border-gray-100"> */}
-                        {/* <div className="space-y-4">
-                          <div className="bg-blue-50 rounded-lg p-4">
-                            <h3 className="font-medium text-blue-800 mb-3">Loan Details</h3>
-                            <div className="space-y-2">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Loan Amount:</span>
-                                <span className="font-medium text-gray-900">{formatCurrency(loan.amount)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Interest Rate:</span>
-                                <span className="font-medium text-gray-900">{loan.interestRate}% APR</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Term Length:</span>
-                                <span className="font-medium text-gray-900">{loan.duration} months</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Monthly Payment:</span>
-                                <span className="font-medium text-green-700">{formatCurrency(monthlyPayment)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">Start Date:</span>
-                                <span className="font-medium text-gray-900">{formatDate(loan.startDate)}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-green-50 rounded-lg p-4">
-                            <h3 className="font-medium text-green-800 mb-3">Lender Information</h3>
-                            <div className="space-y-2">
-                              <p className="flex items-center text-gray-700">
-                                <User className="w-4 h-4 mr-2 text-green-600" />
-                                <span>{loan.lenderDetails?.name || 'Not provided'}</span>
-                              </p>
-                              <p className="flex items-center text-gray-700">
-                                <Mail className="w-4 h-4 mr-2 text-green-600" />
-                                <span>{loan.lenderDetails?.email || 'Not provided'}</span>
-                              </p>
-                              <p className="flex items-center text-gray-700">
-                                <Phone className="w-4 h-4 mr-2 text-green-600" />
-                                <span>{loan.lenderDetails?.phone || 'Not provided'}</span>
-                              </p>
-                            </div>
-                          </div>
-                        </div> */}
-                        
-                        {/* <div className="mt-4 flex justify-between">
-                          <button 
-                            onClick={() => setSelectedLoan(null)}
-                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 
-                              transition-all duration-200"
-                          >
-                            Hide Details
-                          </button>
-                          
-                          <button 
-                            className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 
-                              transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]" onClick={() => handleViewLoanDetails(loan)}
-                          >
-                            Apply for This Loan
-                          </button>
-                        </div>
-                      </div>
-                    )} */}
                   </div>
                 </div>
               );

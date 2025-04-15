@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { DollarSign, Percent, Calendar, User, Briefcase } from "lucide-react";
+import { DollarSign, Percent, Calendar, User, Briefcase, IndianRupeeIcon } from "lucide-react";
 
 const LoanCreation = () => {
   const [loanData, setLoanData] = useState({
@@ -98,8 +98,8 @@ const LoanCreation = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="flex items-center text-sm font-medium text-gray-700">
-              <DollarSign className="w-4 h-4 mr-2 text-green-600" />
-              Loan Amount ($)
+              <IndianRupeeIcon className="w-4 h-4 mr-2 text-green-600" />
+              Loan Amount (₹)
             </label>
             <input
               type="number"
@@ -111,7 +111,7 @@ const LoanCreation = () => {
               className={`w-full px-4 py-3 rounded-lg border ${
                 errors.amount ? "border-red-500" : "border-gray-300"
               } focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors`}
-              placeholder="Enter loan amount (max $100,000)"
+              placeholder="Enter loan amount (max ₹100,000)"
             />
             {errors.amount && (
               <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
