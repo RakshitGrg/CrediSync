@@ -1,7 +1,7 @@
 
 # ⚖️ CrediSync
 
-<img src="CrediSync\refPage.png">
+<img src="\refPage.png">
 
 CrediSync is a powerful, responsive web app built with **React** and **Vite** that helps you **track financial transactions**, manage **creditors & debtors**, and **visualize** your cash flow with ease.
 It's a P2P lending platform which aims at solving one of the prominent problem. The solution aims at bridging the gap between lenders and borrowers by providing a platform where such activities could be held without the necessary intermediary bank backed by surveillance and safety.
@@ -24,7 +24,7 @@ It's a P2P lending platform which aims at solving one of the prominent problem. 
 ---
 
 ## ER Diagram
-<img src="CrediSync\ERDiag.drawio.png">
+<img src="\ERDiag.drawio.png">
 
 ## 🔍 How to View / Run the Project
 
